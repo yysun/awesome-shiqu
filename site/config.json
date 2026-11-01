@@ -1,0 +1,10 @@
+{
+  "github": {
+    "owner": "yysun",
+    "repo": "awesome-shiqu",
+    "branch": "main",
+    "directory": "works",
+    "catalog": "catalog/catalog.json"
+  },
+  "preferRemoteCatalog": true
+}

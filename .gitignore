@@ -1,0 +1,9 @@
+dist/
+node_modules/
+.DS_Store
+*.zip
+!works/**/*.zip
+.preview.log
+
+.openai/*
+!.openai/hosting.json

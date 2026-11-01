@@ -1,0 +1,20 @@
+{
+  "name": "awesome-shiqu",
+  "version": "0.1.0",
+  "private": true,
+  "description": "精选拾趣连环画：可以收藏、分享、慢慢读的古典故事。",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=24 <25" },
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "add:story": "node scripts/add-story.mjs",
+    "catalog": "node scripts/catalog.mjs",
+    "import:story": "node scripts/import-story.mjs",
+    "validate": "node scripts/validate-content.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "preview": "node scripts/preview.mjs",
+    "dev": "node scripts/preview.mjs"
+  }
+}

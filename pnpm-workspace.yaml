@@ -1,0 +1,2 @@
+# This project uses only Node.js built-ins and browser APIs.
+verifyDepsBeforeRun: false
