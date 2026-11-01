@@ -12,22 +12,20 @@
 </head>
 <body class="reader-body">
   <a class="skip-link" href="#story-viewer">跳到正文</a>
-  <header class="reader-header"><a class="back-link" href="./" aria-label="返回作品集"><span aria-hidden="true">←</span><span>作品集</span></a><a class="reader-brand" href="./">拾趣好故事</a><div class="reader-modes shelf-tabs" role="group" aria-label="阅读方式"><button id="mode-paged" class="tab active" aria-pressed="true" disabled>逐页</button><button id="mode-scroll" class="tab" aria-pressed="false" disabled>长卷</button></div><div class="reader-actions"><button id="save-story" class="icon-button" aria-label="收藏这篇故事" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4Z"></path></svg></button><button id="share-story" class="icon-button" aria-label="分享故事" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-4 4 4-4 4 4M5 12v8h14v-8"></path></svg></button></div></header>
+  <header class="reader-header"><a class="back-link" href="./" aria-label="返回作品集"><span aria-hidden="true">←</span><span>作品集</span></a><a class="reader-brand" href="./">拾趣好故事</a><div class="reader-modes shelf-tabs" role="group" aria-label="阅读方式"><button id="mode-multi" class="tab active" aria-pressed="true" disabled>多页</button><button id="mode-scroll" class="tab" aria-pressed="false" disabled>长卷</button></div><div class="reader-actions"><button id="save-story" class="icon-button" aria-label="收藏这篇故事" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4Z"></path></svg></button><button id="share-story" class="icon-button" aria-label="分享故事" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-4 4 4-4 4 4M5 12v8h14v-8"></path></svg></button></div></header>
   <main class="reader-main">
     <section id="preview-panel" class="zip-preview" hidden aria-labelledby="preview-title"><p class="eyebrow">OPEN YOUR STORY</p><h1 id="preview-title">先读一遍，再分享。</h1><p>选择拾趣导出的「分镜与图片 ZIP」，看看故事读起来的样子。</p><label class="primary-button file-button">选择 ZIP 文件<input id="preview-file" type="file" accept=".zip,application/zip"></label><p class="preview-help">文件仅在当前浏览器中打开。支持中文文件名及不超过 100 MiB 的 ZIP。</p></section>
     <div id="reader-status" class="reader-status" role="status">正在打开故事…</div>
     <div id="reader-content" hidden>
       <p id="preview-notice" class="preview-notice" hidden>本地试读 · 尚未投稿 <a href="./reader.html?preview=1">换一个 ZIP</a></p>
       <section class="story-heading"><p id="story-source" class="eyebrow"></p><h1 id="story-title"></h1><p id="story-hook"></p><div class="reader-tools"><span id="story-credit"></span></div></section>
-      <div id="story-viewer" class="viewer" tabindex="0" aria-label="故事画页，使用左右方向键翻页"></div>
-      <div id="page-controls" class="page-controls"><button id="previous-page" class="page-button" aria-label="上一页">← <span>上一页</span></button><label class="page-jump"><span class="sr-only">跳转到画页</span><select id="page-select" aria-label="跳转到画页"></select><span id="page-total"></span></label><button id="next-page" class="page-button" aria-label="下一页"><span>下一页</span> →</button></div>
-      <p class="swipe-hint" id="swipe-hint">左右滑动，或使用方向键翻页</p>
+      <div id="story-viewer" class="viewer" tabindex="0" aria-label="多页阅读，全部故事画页"></div>
       <section id="story-ending" class="story-ending" hidden><p class="eyebrow">故事读完，余味还在</p><h2>这一页之后，想到了什么？</h2><p id="story-reflection" class="reflection"></p><div class="ending-actions"><button id="read-again" class="secondary-button">再读一遍</button><a class="primary-button" href="./">再看一篇 <span aria-hidden="true">→</span></a></div></section>
       <details class="story-notes"><summary>出处与改编说明 <span aria-hidden="true">＋</span></summary><dl><dt>原作出处</dt><dd id="source-detail"></dd><dt>作品署名</dt><dd id="author-detail"></dd><dt>创作方式</dt><dd id="ai-detail"></dd><dt id="adaptation-label">改编说明</dt><dd id="adaptation-detail"></dd></dl><a id="download-story" class="text-link" target="_blank" rel="noopener noreferrer" hidden>下载作品 ZIP ↗</a></details>
     </div>
   </main>
   <div id="toast" class="toast" role="status" hidden></div>
   <dialog id="share-dialog"><form method="dialog"><h2>分享这篇故事</h2><p>复制链接，发给想一起读故事的人。</p><label><span class="sr-only">故事链接</span><input id="share-url" readonly></label><button class="primary-button">完成</button></form></dialog>
-  <noscript><p class="noscript wrap">请启用 JavaScript 以加载故事和翻页阅读。</p></noscript>
+  <noscript><p class="noscript wrap">请启用 JavaScript 以加载故事和阅读画页。</p></noscript>
 </body>
 </html>

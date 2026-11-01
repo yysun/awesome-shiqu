@@ -63,6 +63,8 @@ pnpm preview
 
 本地 ZIP 未提交时，日期暂用文件修改日期；合并后使用 Git 记录中的首次提交日期。原有 `stories/<slug>/story.json` 格式与 `pnpm import:story` 仍可本地构建阅读；远程目录只接受 `works/` ZIP。有旧作品时，先将原始拾趣 ZIP 放入 `works/` 并移除相应旧目录，再启用自动发布。
 
+多页模式一次列出全部画面，采用上图下文布局：窄屏（不超过 760px）一列，中屏（761–1023px）两列，宽屏（1024px 起）三列，图片随各列宽度等比缩放，向下滚动阅读；长卷模式保持单列连续阅读。两种模式均记录阅读进度，切换时保留当前画页。
+
 ## GitHub 设置
 
 创建并推送独立仓库后，在 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。主分支工作流会自动生成目录并部署；成功地址由部署步骤返回。

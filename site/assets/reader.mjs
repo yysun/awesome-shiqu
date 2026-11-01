@@ -1,34 +1,28 @@
+// Render untrusted story prose as text and retain reading progress across grid and scroll layouts.
 import { ROOT, validId, catalog, internalURL, externalURL, storyLink, savedStories, toggleSaved, progressFor, saveProgress, node, toast } from './common.mjs';
 import {loadArchive, loadLocalArchive} from './library.mjs';
 const $ = selector => document.querySelector(selector);
 const params = new URLSearchParams(location.search), id = params.get('story');
 const localPreview = params.get('preview') === '1';
-let story, imageURLs, artwork, current = 0, mode = 'paged', pages = [], scrollTimer, resizeObserver, ticking = false;
+let story, imageURLs, artwork, current = 0, mode = 'multi', pages = [], ticking = false;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function updatePage(index, save = true) {
   current = Math.max(0, Math.min(pages.length - 1, index));
-  $('#page-select').value = String(current);
-  $('#previous-page').disabled = current === 0;
-  $('#next-page').disabled = current === pages.length - 1;
-  $('#story-ending').hidden = mode !== 'scroll' && current !== pages.length - 1;
   if (save && !localPreview) saveProgress(story.id, current);
-  const image = pages[current]?.querySelector('img'); if (image) image.loading = 'eager';
-  const next = pages[current + 1]?.querySelector('img'); if (next) next.loading = 'eager';
+  for (let i = current; i < Math.min(pages.length, current + 3); i++) {
+    const image = pages[i].querySelector('img'); if (image) image.loading = 'eager';
+  }
 }
 function goTo(index, behavior = reduceMotion ? 'auto' : 'smooth') {
   updatePage(index);
-  if (mode === 'scroll') pages[current].scrollIntoView({ behavior, block: 'start' });
-  else $('#story-viewer').scrollTo({ left: current * $('#story-viewer').clientWidth, behavior });
+  pages[current].scrollIntoView({ behavior, block: 'start' });
 }
 function setMode(nextMode) {
   if (nextMode === mode) return;
-  clearTimeout(scrollTimer);
   const retained = current; mode = nextMode;
   $('#story-viewer').classList.toggle('scroll-mode', mode === 'scroll');
-  $('#story-viewer').setAttribute('aria-label', mode === 'scroll' ? '连续阅读故事画页' : '故事画页，使用左右方向键翻页');
-  $('#page-controls').hidden = mode === 'scroll';
-  $('#swipe-hint').hidden = mode === 'scroll';
-  for (const name of ['paged','scroll']) { const button = $('#mode-' + name); button.classList.toggle('active', mode === name); button.setAttribute('aria-pressed', String(mode === name)); }
+  $('#story-viewer').setAttribute('aria-label', mode === 'scroll' ? '连续阅读故事画页' : '多页阅读，全部故事画页');
+  for (const name of ['multi','scroll']) { const button = $('#mode-' + name); button.classList.toggle('active', mode === name); button.setAttribute('aria-pressed', String(mode === name)); }
   requestAnimationFrame(() => goTo(retained, 'auto'));
 }
 function saveButton() {
@@ -50,7 +44,7 @@ function pageElement(page, index, manifestURL) {
   image.src = url; image.alt = `${story.title}，第 ${index + 1} 幅：${page.caption}`; image.loading = 'lazy'; image.decoding = 'async'; image.draggable = false;
   image.addEventListener('error', () => { if (!art.querySelector('.image-error')) art.append(node('p', 'image-error', '这幅画面暂时无法加载，请刷新重试。')); });
   art.append(image);
-  const caption = node('figcaption'); caption.append(node('span', 'page-number', `${String(index + 1).padStart(2,'0')} / ${String(story.pages.length).padStart(2,'0')}`), node('p', 'caption-text', page.caption));
+  const caption = node('figcaption'); caption.append(node('p', 'caption-text', `${index + 1}. ${page.caption}`));
   figure.append(art, caption); return figure;
 }
 async function share() {
@@ -112,7 +106,6 @@ try {
   $('#story-title').textContent = story.title;
   $('#story-hook').textContent = story.hook || '';
   $('#story-credit').textContent = [story.author, story.artStyle, `${story.pages.length} 幅`].filter(Boolean).join(' · ');
-  $('#page-total').textContent = `/ ${story.pages.length} 页`;
   $('#story-reflection').textContent = story.reflection || '故事有了结尾，留给我们的思考还在继续。';
   $('#author-detail').textContent = story.author || '未注明';
   $('#ai-detail').textContent = story.aiGenerated ? '本作品包含 AI 生成的画面或改编文字。原作出处与改编内容分别注明。' : '创作方式请以作者说明为准。';
@@ -123,34 +116,20 @@ try {
   else $('#source-detail').textContent = story.source?.title || '未注明';
   pages = story.pages.map((page,index) => pageElement(page,index,manifestURL));
   $('#story-viewer').append(...pages);
-  for (let i = 0; i < pages.length; i++) { const option = node('option', '', String(i + 1)); option.value = String(i); $('#page-select').append(option); }
+  $('#story-ending').hidden = false;
   $('#reader-status').hidden = true; $('#reader-content').hidden = false;
   $('#save-story').disabled = localPreview; $('#share-story').disabled = localPreview;
-  $('#mode-paged').disabled = false; $('#mode-scroll').disabled = false; if (!localPreview) saveButton();
+  $('#mode-multi').disabled = false; $('#mode-scroll').disabled = false; if (!localPreview) saveButton();
   $('#save-story').addEventListener('click', () => { const result = toggleSaved(story.id); if (!result.stored) toast('当前浏览器无法保存收藏。'); else { saveButton(); toast(result.saved ? '已加入我的收藏' : '已取消收藏'); } });
   $('#share-story').addEventListener('click', share);
-  $('#previous-page').addEventListener('click', () => goTo(current - 1));
-  $('#next-page').addEventListener('click', () => goTo(current + 1));
-  $('#page-select').addEventListener('change', event => goTo(Number(event.target.value)));
-  $('#mode-paged').addEventListener('click', () => setMode('paged'));
+  $('#mode-multi').addEventListener('click', () => setMode('multi'));
   $('#mode-scroll').addEventListener('click', () => setMode('scroll'));
-  $('#read-again').addEventListener('click', () => { goTo(0, 'auto'); if (mode === 'paged') $('#story-viewer').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }); });
-  $('#story-viewer').addEventListener('scroll', () => {
-    if (mode !== 'paged') return;
-    clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => { if (mode === 'paged') updatePage(Math.round($('#story-viewer').scrollLeft / $('#story-viewer').clientWidth)); }, 90);
-  }, { passive: true });
-  document.addEventListener('keydown', event => {
-    if (mode !== 'paged' || event.altKey || event.ctrlKey || event.metaKey || /INPUT|SELECT|TEXTAREA/.test(event.target.tagName) || document.querySelector('dialog[open]')) return;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); goTo(current + (event.key === 'ArrowRight' ? 1 : -1)); }
-    if (event.key === 'Home' && document.activeElement === $('#story-viewer')) { event.preventDefault(); goTo(0); }
-    if (event.key === 'End' && document.activeElement === $('#story-viewer')) { event.preventDefault(); goTo(pages.length - 1); }
-  });
+  $('#read-again').addEventListener('click', () => goTo(0, 'auto'));
   window.addEventListener('scroll', () => {
-    if (mode !== 'scroll' || ticking) return;
+    if (ticking) return;
     ticking = true;
     requestAnimationFrame(() => {
-      ticking = false; if (mode !== 'scroll') return;
+      ticking = false;
       const target = innerHeight * 0.35;
       const found = pages.findIndex(page => { const rect = page.getBoundingClientRect(); return rect.top <= target && rect.bottom > target; });
       if (found >= 0 && found !== current) updatePage(found);
@@ -159,13 +138,7 @@ try {
   if (!localPreview) window.addEventListener('storage', saveButton);
   const resume = localPreview ? 0 : Math.min(pages.length - 1, progressFor(id)?.page || 0);
   updatePage(resume, false);
-  requestAnimationFrame(() => { goTo(resume, 'auto'); });
-  let previousWidth = $('#story-viewer').clientWidth;
-  resizeObserver = new ResizeObserver(entries => {
-    const width = Math.round(entries[0].contentRect.width);
-    if (mode === 'paged' && width !== previousWidth) { previousWidth = width; clearTimeout(scrollTimer); $('#story-viewer').scrollTo({ left: current * $('#story-viewer').clientWidth, behavior: 'auto' }); }
-  });
-  resizeObserver.observe($('#story-viewer'));
+  requestAnimationFrame(() => { if (resume > 0) goTo(resume, 'auto'); });
 } catch (error) {
   artwork?.dispose();
   $('#reader-content').hidden = true; $('#reader-status').hidden = false;
