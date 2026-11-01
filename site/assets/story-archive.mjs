@@ -1,3 +1,4 @@
+// Parse public story fields from Shiqu exports without publishing prompts or generation history.
 import {readZip, ZIP_LIMITS, safeArchivePath} from './zip.mjs';
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
@@ -25,6 +26,60 @@ function sourceURL(value) {
   try { url = new URL(value); } catch { throw new Error('出处链接必须是完整的 http 或 https 链接。'); }
   assert(['http:', 'https:'].includes(url.protocol) && !url.username && !url.password, '出处链接只允许 http 或 https，不能包含登录凭据。');
   return url.href;
+}
+
+export function validateGenerationModels(value = []) {
+  assert(Array.isArray(value) && value.length <= 1000, '生成模型必须是数组，最多 1000 条。');
+  return [...new Set(value.map(model => text(model, '模型名', 200)))];
+}
+
+export function parseStoryJSON(input) {
+  let data;
+  try { data = JSON.parse(input.replace(/^\uFEFF/, '')); }
+  catch { throw new Error('故事.json 不是有效的 JSON。'); }
+  assert(data && typeof data === 'object' && !Array.isArray(data), '故事.json 必须是对象。');
+  assert(Array.isArray(data.pages) && data.pages.length >= 1 && data.pages.length <= ZIP_LIMITS.pages,
+    '故事.json 需要 1–80 幅画面。');
+  const sourceTitle = text(data.sourceReference, '出处标题', 1000);
+  const url = sourceURL(data.sourceUrl === undefined ? '' : text(data.sourceUrl, '出处链接', 2000, true));
+  let models = [], storyboardModels = [];
+  if (data.generationModels !== undefined) {
+    assert(Array.isArray(data.generationModels) && data.generationModels.length <= 1000, '故事.json 的生成模型必须是数组，最多 1000 条。');
+    models = validateGenerationModels(data.generationModels.map(record => {
+      assert(record && typeof record === 'object' && !Array.isArray(record), '故事.json 的生成模型记录必须是对象。');
+      return record.model;
+    }));
+    // Batched exports use "plan" for the outline and "plan:<offset>" for actual storyboards.
+    const batches = data.generationModels.filter(record => typeof record.step === 'string' && /^plan:\d+$/.test(record.step));
+    const storyboard = batches.length ? batches : data.generationModels.filter(record => record.step === 'plan');
+    storyboardModels = validateGenerationModels(storyboard.map(record => record.model));
+  }
+  return {
+    title: text(data.title, '标题', 200), hook: text(data.hook === undefined ? '' : data.hook, '简介', 2000, true),
+    book: text(data.bookId === undefined ? sourceTitle.match(/《([^》]+)》/)?.[1] || sourceTitle : data.bookId, '书名', 1000),
+    theme: text(data.theme === undefined ? '' : data.theme, '主题', 1000, true),
+    artStyle: text(data.artStyleLabel === undefined ? '' : data.artStyleLabel, '画风', 200, true),
+    source: {title: sourceTitle, ...(url ? {url} : {})},
+    reflection: text(data.reflection === undefined ? '' : data.reflection, '结语', 3000, true),
+    adaptationNote: text(data.adaptationNote === undefined ? '' : data.adaptationNote, '改编说明', 6000, true),
+    ...(models.length ? {generationModels: models} : {}),
+    ...(storyboardModels.length ? {storyboardModels} : {}),
+    pages: data.pages.map((page, index) => {
+      assert(page && typeof page === 'object' && !Array.isArray(page), `第 ${index + 1} 幅必须是对象。`);
+      return {image: safeArchivePath(page.image), caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000)};
+    }),
+  };
+}
+
+export function parseStoryFiles(files) {
+  const name = files.has('故事.json') ? '故事.json' : '分镜.md';
+  const bytes = files.get(name);
+  assert(bytes, 'ZIP 根目录缺少故事.json 或分镜.md；请使用拾趣的“分镜与图片 ZIP”导出。');
+  assert(bytes.length <= ZIP_LIMITS.markdownBytes, `${name} 超过 1 MiB。`);
+  let input;
+  try { input = new TextDecoder('utf-8', {fatal: true}).decode(bytes); }
+  catch { throw new Error(`${name} 必须使用 UTF-8 编码。`); }
+  return name === '故事.json' ? parseStoryJSON(input) : parseStoryboard(input);
 }
 
 // Matches the Shiqu “分镜与图片 ZIP” export. Private production/image
@@ -109,12 +164,7 @@ function imageFormat(bytes, name) {
 export async function parseStoryArchive(bytes, options = {}) {
   // Validate caller-owned identity before allocating or decompressing content.
   const id = validateStoryId(options.id), author = text(options.author, '署名', 120), publishedAt = date(options.publishedAt);
-  const files = await readZip(bytes), storyboard = files.get('分镜.md');
-  assert(storyboard, 'ZIP 根目录缺少分镜.md；请使用拾趣的“分镜与图片 ZIP”导出。');
-  let markdown;
-  try { markdown = new TextDecoder('utf-8', {fatal: true}).decode(storyboard); }
-  catch { throw new Error('分镜.md 必须使用 UTF-8 编码。'); }
-  const parsed = parseStoryboard(markdown), images = [], used = new Set();
+  const files = await readZip(bytes), parsed = parseStoryFiles(files), images = [], used = new Set();
   const pages = parsed.pages.map((page, index) => {
     const key = page.image.normalize('NFC').toLowerCase();
     assert(!used.has(key), '分镜中重复引用了同一张图片。'); used.add(key);
@@ -132,6 +182,8 @@ export async function parseStoryArchive(bytes, options = {}) {
     artStyle: text(parsed.artStyle, '画风', 200, true), author, publishedAt,
     source: {title: text(parsed.source.title, '出处标题', 1000), ...(url ? {url} : {})},
     adaptationNote: text(parsed.adaptationNote, '改编说明', 6000, true), reflection: text(parsed.reflection, '结语', 3000, true),
+    ...(parsed.generationModels ? {generationModels: parsed.generationModels} : {}),
+    ...(parsed.storyboardModels ? {storyboardModels: parsed.storyboardModels} : {}),
     aiGenerated: true, pages,
   };
   return {manifest, images};

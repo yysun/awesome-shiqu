@@ -1,7 +1,9 @@
+// Build synthetic ZIP collections in temporary directories, never in the public works library.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile} from 'node:fs/promises';
+import filesystem, {mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile} from 'node:fs/promises';
+import {syncBuiltinESMExports} from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import {deflateRawSync} from 'node:zlib';
@@ -87,6 +89,43 @@ test('the remote catalogue pins ZIPs to source commits and retains old hashed co
   await assert.rejects(createRepositoryCatalog(root, {owner: 'yysun', repo: 'awesome-shiqu', commit: 'a'.repeat(64)}), /40 字符/);
 });
 
+test('JSON model names survive archive catalogues, legacy import, and static publication without generation history', async t => {
+  const root = await workspace(t);
+  const data = {
+    title: 'JSON 作品', bookId: '测试古书', sourceReference: '《测试古书》', artStyleLabel: '水墨',
+    productionPrompt: 'PRIVATE-PRODUCTION-PROMPT', sourceText: 'PRIVATE-SOURCE-TEXT',
+    generationModels: [{step: 'plan:0', model: 'text-model'}, {step: 'repair:1:0', model: 'text-model', prompt: 'PRIVATE-NOTES'}, {step: 'image:0', model: 'image-model'}, {step: 'image:1', model: 'image-model'}],
+    pages: [{image: '图片/01.png', caption: 'JSON 第一幅。', prompt: 'PRIVATE-IMAGE-PROMPT'}, {image: '图片/02.png', caption: 'JSON 第二幅。'}],
+  };
+  const bytes = zip([['故事.json', JSON.stringify(data)], ['图片/01.png', PNG], ['图片/02.png', PNG]]);
+  const filename = path.join(root, 'works/alice/test-story.zip'); await writeFile(filename, bytes);
+  const library = await readArchiveLibrary(root);
+  assert.deepEqual(library[0].manifest.generationModels, ['text-model', 'image-model']);
+  assert.deepEqual(library[0].manifest.storyboardModels, ['text-model']);
+  const remote = await createRepositoryCatalog(root, {owner: 'yysun', repo: 'awesome-shiqu', commit: 'a'.repeat(40)});
+  assert.deepEqual(remote.stories[0].generationModels, ['text-model', 'image-model']);
+  assert.deepEqual(remote.stories[0].storyboardModels, ['text-model']);
+  assert.equal(remote.stories[0].title, data.title);
+  assert.equal(JSON.stringify(remote).includes('PRIVATE-'), false);
+  assert.equal(JSON.stringify(remote).includes('repair:1:0'), false);
+  const imported = await importStory(filename, {slug: 'json-story', author: 'alice', date: '2026-11-01'}, root);
+  assert.deepEqual(imported.generationModels, ['text-model', 'image-model']);
+  assert.deepEqual(imported.storyboardModels, ['text-model']);
+  const summary = await build(root);
+  assert.equal(summary.count, 2); assert.equal(summary.pages, 4);
+  const local = JSON.parse(await readFile(path.join(root, 'dist/catalog.json'), 'utf8'));
+  for (const story of local.stories) {
+    assert.deepEqual(story.generationModels, ['text-model', 'image-model']);
+    assert.deepEqual(story.storyboardModels, ['text-model']);
+  }
+  assert.equal(JSON.stringify(local).includes('PRIVATE-'), false);
+  const manifest = JSON.parse(await readFile(path.join(root, 'dist/stories/json-story/story.json'), 'utf8'));
+  assert.deepEqual(manifest.generationModels, ['text-model', 'image-model']);
+  assert.deepEqual(manifest.storyboardModels, ['text-model']);
+  assert.equal(JSON.stringify(manifest).includes('PRIVATE-'), false);
+  assert.deepEqual(await readFile(path.join(root, 'dist/works/alice/test-story.zip')), bytes);
+});
+
 test('Shiqu export filenames keep Chinese, spaces and punctuation through build and reader URLs', async t => {
   const root = await workspace(t), commit = 'd'.repeat(40);
   const names = ['黄忠智取定军山.zip', 'A Story #1 (100%).zip', '《拾趣》·后记.ZIP'];
@@ -139,9 +178,9 @@ test('the remote index refuses legacy-only readers, unsupported paths, and symli
 
 test('contribution paths reject ambiguous names, nested submissions, symlinks, and missing images', async t => {
   const root = await workspace(t);
-  await mkdir(path.join(root, 'works/Alice'));
+  await mkdir(path.join(root, 'works/Invalid-Author'));
   await assert.rejects(readArchiveLibrary(root), /用户名目录/);
-  await rm(path.join(root, 'works/Alice'), {recursive: true});
+  await rm(path.join(root, 'works/Invalid-Author'), {recursive: true});
   await writeFile(path.join(root, 'works/alice/bad?.zip'), ARCHIVE);
   await assert.rejects(readArchiveLibrary(root), /作品必须/);
   await rm(path.join(root, 'works/alice/bad?.zip'));
@@ -156,13 +195,31 @@ test('contribution paths reject ambiguous names, nested submissions, symlinks, a
 });
 
 test('case and Unicode aliases cannot publish the same contribution twice', async t => {
-  const root = await workspace(t);
-  await writeFile(path.join(root, 'works/alice/test-story.ZIP'), ARCHIVE);
-  await assert.rejects(readArchiveLibrary(root), /文件名仅大小写或 Unicode/);
-  await rm(path.join(root, 'works/alice/test-story.ZIP'));
-  await writeFile(path.join(root, 'works/alice/café.zip'), ARCHIVE);
-  await writeFile(path.join(root, 'works/alice/cafe\u0301.zip'), ARCHIVE);
-  await assert.rejects(readArchiveLibrary(root), /文件名仅大小写或 Unicode/);
+  const root = await workspace(t), folder = path.join(root, 'works/alice');
+  const originalReaddir = filesystem.readdir;
+  let listedNames = [];
+  // Case-insensitive or Unicode-normalizing filesystems cannot list both aliases.
+  // Mock only the listing; ZIP files and content validation stay real.
+  const listing = t.mock.method(filesystem, 'readdir', async (directory, options) => {
+    if (directory !== folder || !options?.withFileTypes) return originalReaddir(directory, options);
+    return listedNames.map(name => ({name, isFile: () => true, isSymbolicLink: () => false}));
+  });
+  syncBuiltinESMExports();
+  try {
+    for (const names of [['test-story.zip', 'test-story.ZIP'], ['café.zip', 'cafe\u0301.zip']]) {
+      for (const name of names) await writeFile(path.join(folder, name), ARCHIVE);
+      listedNames = [names[0]];
+      const single = await readArchiveLibrary(root);
+      assert.equal(single.length, 1);
+      assert.equal(single[0].manifest.title, '测试故事');
+      listedNames = names;
+      await assert.rejects(readArchiveLibrary(root), /文件名仅大小写或 Unicode/);
+    }
+  } finally {
+    listing.mock.restore();
+    syncBuiltinESMExports();
+    assert.equal(readdir, originalReaddir);
+  }
 });
 
 test('the optional add command copies only checked archives and refuses replacing a story', async t => {

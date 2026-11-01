@@ -1,4 +1,5 @@
-import {parseStoryArchive} from './story-archive.mjs';
+// Load lightweight catalogues and verified ZIPs only from the selected repository or site.
+import {parseStoryArchive, validateGenerationModels} from './story-archive.mjs';
 import {sha256Hex} from './sha256.mjs';
 import {ZIP_LIMITS} from './zip.mjs';
 import {validArchivePath} from './archive-path.mjs';
@@ -108,6 +109,7 @@ export function validateCatalog(data, {root = ROOT, github = null} = {}) {
     check(isObject(story) && validId(story.id) && !seen.has(story.id) && typeof story.title === 'string' && story.title.trim() && story.title.length <= 200 && Number.isSafeInteger(story.pageCount) && story.pageCount >= 1 && story.pageCount <= 80, '作品集目录包含无效或重复作品。');
     seen.add(story.id);
     const result = {...story, coverURL: assetURL(story.cover, {root, github}).href};
+    if (story.storyboardModels !== undefined) result.storyboardModels = validateGenerationModels(story.storyboardModels);
     if (story.archive !== undefined) {
       check(typeof story.sha256 === 'string' && /^[0-9a-f]{64}$/.test(story.sha256) && Number.isSafeInteger(story.archiveBytes) && story.archiveBytes > 0 && story.archiveBytes <= MAX_ZIP_BYTES && typeof story.author === 'string' && story.author.trim() && story.author.length <= 120 && validDate(story.publishedAt), '作品 ZIP 的目录信息不完整。');
       result.archiveURL = assetURL(story.archive, {root, github, archive: true}).href;

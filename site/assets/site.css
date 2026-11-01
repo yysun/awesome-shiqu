@@ -19,6 +19,7 @@
 .story-card .card-title{margin-left:16px;margin-right:16px}
 .story-card .card-hook{margin-left:16px;margin-right:16px}
 .story-card .card-meta{margin-left:16px;margin-right:16px}
+.card-credit{min-width:0}.card-model{display:block;margin-top:4px;overflow-wrap:anywhere}
 .viewer:not(.scroll-mode) .page-art img{height:auto;min-height:0;max-height:none}
 .viewer:not(.scroll-mode) figcaption{padding:20px 25px;gap:10px;justify-content:flex-start;flex:1}
 @media(min-width:761px){.viewer:not(.scroll-mode){grid-template-columns:repeat(2,minmax(0,1fr))}.viewer:not(.scroll-mode) figcaption{padding:16px;gap:8px}.viewer:not(.scroll-mode) .caption-text{font-size:19px;line-height:1.8}}

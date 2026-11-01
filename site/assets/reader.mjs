@@ -1,6 +1,7 @@
 // Render untrusted story prose as text and retain reading progress across grid and scroll layouts.
 import { ROOT, validId, catalog, internalURL, externalURL, storyLink, savedStories, toggleSaved, progressFor, saveProgress, node, toast } from './common.mjs';
 import {loadArchive, loadLocalArchive} from './library.mjs';
+import {validateGenerationModels} from './story-archive.mjs';
 const $ = selector => document.querySelector(selector);
 const params = new URLSearchParams(location.search), id = params.get('story');
 const localPreview = params.get('preview') === '1';
@@ -105,10 +106,14 @@ try {
   $('#story-source').textContent = story.book || story.source?.title || '拾趣精选';
   $('#story-title').textContent = story.title;
   $('#story-hook').textContent = story.hook || '';
-  $('#story-credit').textContent = [story.author, story.artStyle, `${story.pages.length} 幅`].filter(Boolean).join(' · ');
+  const models = validateGenerationModels(story.generationModels);
+  const modelCredit = models.length ? `模型：${models.join(' / ')}` : '';
+  $('#story-credit').textContent = [story.author, story.artStyle, `${story.pages.length} 幅`, modelCredit].filter(Boolean).join(' · ');
   $('#story-reflection').textContent = story.reflection || '故事有了结尾，留给我们的思考还在继续。';
   $('#author-detail').textContent = story.author || '未注明';
   $('#ai-detail').textContent = story.aiGenerated ? '本作品包含 AI 生成的画面或改编文字。原作出处与改编内容分别注明。' : '创作方式请以作者说明为准。';
+  $('#model-detail').textContent = models.join(' / ');
+  $('#model-detail').hidden = !models.length; $('#model-label').hidden = !models.length;
   $('#adaptation-detail').textContent = story.adaptationNote || '';
   $('#adaptation-detail').hidden = !story.adaptationNote; $('#adaptation-label').hidden = !story.adaptationNote;
   const sourceURL = externalURL(story.source?.url);

@@ -1,3 +1,4 @@
+// Read bounded ZIP entries in memory for imports; never extract archive paths to disk.
 import {inflateRawSync} from 'node:zlib';
 import {assert, LIMITS, safeArchivePath} from './content.mjs';
 
@@ -57,7 +58,7 @@ export function readZip(bytes) {
     const normalized = name.replace(/\/$/, '').normalize('NFC').toLowerCase();
     assert(!names.has(normalized), `ZIP 中存在重复或大小写冲突的文件：${name}`);
     names.add(normalized);
-    assert(expanded <= (name === '分镜.md' ? LIMITS.markdownBytes : LIMITS.imageBytes), `ZIP 文件过大：${name}`);
+    assert(expanded <= (name === '分镜.md' || name === '故事.json' ? LIMITS.markdownBytes : LIMITS.imageBytes), `ZIP 文件过大：${name}`);
     total += expanded;
     assert(total <= LIMITS.archiveBytes, 'ZIP 解压后的总大小超过 256 MiB。');
     bounds(bytes, local, 30);

@@ -1,3 +1,4 @@
+// Render lightweight catalogue cards without downloading story ZIPs to obtain model credits.
 import { catalog, libraryInfo, storyLink, savedStories, toggleSaved, progressFor, node, bookmarkIcon, toast } from './common.mjs';
 const $ = selector => document.querySelector(selector);
 let stories = [], scope = 'all';
@@ -11,7 +12,9 @@ function card(story, saved) {
   const book = story.book || story.source?.title || '';
   if (book) cover.append(node('span', 'cover-label', book));
   const title = node('h3', 'card-title', story.title), hook = node('p', 'card-hook', story.hook || '翻开这段故事，读到一点余味。');
-  const meta = node('div', 'card-meta'); meta.append(node('span', '', [story.author, story.pageCount + ' 幅'].filter(Boolean).join(' · ')));
+  const meta = node('div', 'card-meta'), credit = node('span', 'card-credit', [story.author, story.pageCount + ' 幅'].filter(Boolean).join(' · '));
+  if (story.storyboardModels?.length) credit.append(node('span', 'card-model', `分镜模型：${story.storyboardModels.join(' / ')}`));
+  meta.append(credit);
   const current = Math.min(story.pageCount - 1, progressFor(story.id)?.page || 0);
   meta.append(node('span', 'card-action', current > 0 ? `继续第 ${current + 1} 页 →` : '开始阅读 →'));
   link.append(cover, title, hook, meta);

@@ -1,5 +1,7 @@
+// Validate allowlisted public manifests and confine all published files to the story directory.
 import {lstat, readFile, readdir, realpath} from 'node:fs/promises';
 import path from 'node:path';
+import {validateGenerationModels} from '../site/assets/story-archive.mjs';
 
 export const LIMITS = Object.freeze({
   archiveBytes: 256 * 1024 * 1024,
@@ -64,7 +66,7 @@ function onlyKeys(value, permitted, name) {
 
 export function validateManifest(input, expectedId = input?.id) {
   onlyKeys(input, ['schemaVersion', 'id', 'title', 'hook', 'book', 'theme', 'artStyle', 'author',
-    'publishedAt', 'source', 'adaptationNote', 'reflection', 'aiGenerated', 'pages'], '作品清单');
+    'publishedAt', 'source', 'adaptationNote', 'reflection', 'generationModels', 'storyboardModels', 'aiGenerated', 'pages'], '作品清单');
   assert(input.schemaVersion === 1, '作品清单 schemaVersion 必须为 1。');
   const id = validateSlug(input.id);
   assert(id === expectedId, '作品清单 id 必须与文件夹名称相同。');
@@ -97,6 +99,8 @@ export function validateManifest(input, expectedId = input?.id) {
     source: {title: sourceTitle, ...(sourceUrl ? {url: sourceUrl} : {})},
     adaptationNote: text(input.adaptationNote ?? '', '改编说明', 6000, true),
     reflection: text(input.reflection ?? '', '结语', 3000, true),
+    ...(input.generationModels === undefined ? {} : {generationModels: validateGenerationModels(input.generationModels)}),
+    ...(input.storyboardModels === undefined ? {} : {storyboardModels: validateGenerationModels(input.storyboardModels)}),
     aiGenerated: input.aiGenerated, pages,
   };
 }

@@ -1,9 +1,11 @@
+// Synthetic exports exercise the shared browser/import parser without publishing test stories.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {deflateRawSync} from 'node:zlib';
 import {readZip, crc32, ZIP_LIMITS} from '../site/assets/zip.mjs';
-import {parseStoryArchive, parseStoryboard, validateStoryId} from '../site/assets/story-archive.mjs';
+import {parseStoryArchive, parseStoryboard, parseStoryJSON, validateGenerationModels, validateStoryId} from '../site/assets/story-archive.mjs';
 import {prepareStory} from '../scripts/import-story.mjs';
+import {validateManifest} from '../scripts/content.mjs';
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3ioAAAAASUVORK5CYII=', 'base64');
 const SOURCE = `# 螳螂捕蝉
@@ -55,6 +57,20 @@ PRIVATE-IMAGE-PROMPT-TWO
 根据古典寓言改编，文字与插画使用 AI 辅助制作。
 `;
 const OPTIONS = {id: 'alice--tang-lang', author: 'alice', publishedAt: '2026-11-01'};
+const JSON_STORY = {
+  id: 'PRIVATE-LOCAL-ID', title: 'JSON 故事', hook: '从结构化数据读故事。', bookId: '说苑', theme: '聪明与糊涂',
+  sourceReference: '《说苑·正谏》', sourceUrl: 'https://example.org/json-source', artStyleLabel: '水墨写意',
+  sourceText: 'PRIVATE-SOURCE-TEXT', productionPrompt: 'PRIVATE-PRODUCTION-PROMPT',
+  generationModels: [
+    {step: 'plan:0', model: ' text-model ', notes: 'PRIVATE-GENERATION-NOTES'},
+    {step: 'reflection', model: 'text-model'}, {step: 'image:0', model: 'image-model'}, {step: 'image:1', model: 'image-model'},
+  ],
+  pages: [
+    {image: '图片/01.png', caption: '第一幅：## 余味\n<html>只是文本。</html>', prompt: 'PRIVATE-IMAGE-PROMPT'},
+    {image: '图片/02.png', caption: '第二幅。', prompt: 'PRIVATE-IMAGE-PROMPT'},
+  ],
+  reflection: 'JSON 结语。', adaptationNote: 'JSON 改编说明。', revision: 7, createdAt: 'PRIVATE-CREATION-DATE',
+};
 
 function zip(entries, {deflate = false, descriptor = false} = {}) {
   const locals = [], central = [];
@@ -89,6 +105,9 @@ function zip(entries, {deflate = false, descriptor = false} = {}) {
 }
 const entries = () => [['分镜.md', SOURCE], ['图片/', ''], ['图片/01.png', PNG], ['图片/02.png', PNG]];
 const storyZip = options => zip(entries(), options);
+const jsonZip = (input = JSON.stringify(JSON_STORY), options) => zip([
+  ['故事.json', input], ['分镜.md', 'This obsolete Markdown is deliberately invalid.'], ['图片/01.png', PNG], ['图片/02.png', PNG],
+], options);
 const centralOffset = bytes => bytes.readUInt32LE(bytes.length - 6);
 
 test('portable parser reads UTF-8 STORE exports from a Uint8Array slice and matches the legacy importer', async () => {
@@ -113,6 +132,103 @@ test('browser-compatible decompression reads DEFLATE and streaming data descript
   const bytes = storyZip();
   const isolated = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   assert.equal((await readZip(isolated)).size, 3);
+});
+
+test('JSON takes precedence over Markdown and shares public fields with the synchronous importer', async () => {
+  for (const options of [{}, {deflate: true}, {deflate: true, descriptor: true}]) {
+    const bytes = jsonZip(undefined, options), parsed = await parseStoryArchive(bytes, OPTIONS);
+    const imported = prepareStory(bytes, {slug: 'tang-lang', author: OPTIONS.author, date: OPTIONS.publishedAt});
+    assert.deepEqual(parsed.manifest, {...imported.manifest, id: OPTIONS.id});
+    assert.equal(parsed.manifest.title, JSON_STORY.title);
+    assert.equal(parsed.manifest.book, JSON_STORY.bookId);
+    assert.equal(parsed.manifest.artStyle, JSON_STORY.artStyleLabel);
+    assert.equal(parsed.manifest.source.title, JSON_STORY.sourceReference);
+    assert.equal(parsed.manifest.source.url, JSON_STORY.sourceUrl);
+    assert.equal(parsed.manifest.reflection, JSON_STORY.reflection);
+    assert.equal(parsed.manifest.adaptationNote, JSON_STORY.adaptationNote);
+    assert.equal(parsed.manifest.pages[0].caption, JSON_STORY.pages[0].caption);
+    assert.deepEqual(parsed.manifest.generationModels, ['text-model', 'image-model']);
+    assert.deepEqual(parsed.manifest.storyboardModels, ['text-model']);
+    assert.equal(JSON.stringify(parsed.manifest).includes('PRIVATE-'), false);
+    assert.equal(JSON.stringify(parsed.manifest).includes('plan:0'), false);
+    assert.deepEqual(Buffer.from(parsed.images[0].bytes), PNG);
+  }
+  const withoutMarkdown = zip([['故事.json', JSON.stringify(JSON_STORY)], ['图片/01.png', PNG], ['图片/02.png', PNG]]);
+  assert.equal((await parseStoryArchive(withoutMarkdown, OPTIONS)).manifest.title, JSON_STORY.title);
+  const withoutModels = {...JSON_STORY}; delete withoutModels.generationModels;
+  assert.equal(parseStoryJSON(JSON.stringify(withoutModels)).generationModels, undefined);
+  assert.equal(parseStoryJSON(JSON.stringify(withoutModels)).storyboardModels, undefined);
+  assert.equal((await parseStoryArchive(storyZip(), OPTIONS)).manifest.generationModels, undefined);
+  assert.equal((await parseStoryArchive(storyZip(), OPTIONS)).manifest.storyboardModels, undefined);
+});
+
+test('storyboard credits use batch models rather than outline, reflection, review, or image models', async () => {
+  const data = {...JSON_STORY, generationModels: [
+    {step: 'plan', model: 'outline-model'}, {step: 'recommend', model: 'recommend-model'},
+    {step: 'plan:0', model: ' storyboard-a '}, {step: 'plan:20', model: 'storyboard-b'}, {step: 'plan:40', model: 'storyboard-a'},
+    {step: 'reflection', model: 'ending-model'}, {step: 'review:0', model: 'review-model'}, {step: 'image:0', model: 'image-model'},
+  ]};
+  const parsed = await parseStoryArchive(jsonZip(JSON.stringify(data)), OPTIONS);
+  assert.deepEqual(parsed.manifest.storyboardModels, ['storyboard-a', 'storyboard-b']);
+  assert.deepEqual(parseStoryJSON(JSON.stringify({...JSON_STORY, generationModels: [{step: 'plan', model: 'legacy-model'}]})).storyboardModels,
+    ['legacy-model']);
+  for (const records of [[], [{step: 'image:0', model: 'image-model'}], [{model: 'unspecified-model'}], [{step: 'plan:unknown', model: 'unknown-model'}]]) {
+    assert.equal(parseStoryJSON(JSON.stringify({...JSON_STORY, generationModels: records})).storyboardModels, undefined);
+  }
+});
+
+test('malformed JSON fails explicitly rather than falling back to Markdown', async () => {
+  for (const input of ['{', 'null', '[]', Buffer.from([0xff])]) {
+    const bytes = zip([['故事.json', input], ...entries()]);
+    await assert.rejects(parseStoryArchive(bytes, OPTIONS), /故事.json/);
+    assert.throws(() => prepareStory(bytes, {slug: 'tang-lang', author: OPTIONS.author}), /故事.json/);
+  }
+  await assert.rejects(parseStoryArchive(zip([['图片/01.png', PNG]]), OPTIONS), /缺少故事.json 或分镜.md/);
+  assert.equal(parseStoryJSON('\uFEFF' + JSON.stringify(JSON_STORY)).title, JSON_STORY.title);
+});
+
+test('JSON validates public fields, image paths, model records, and exact size limits', async () => {
+  const invalid = [
+    [{title: ''}, /标题/], [{hook: null}, /简介/], [{sourceReference: ''}, /出处/],
+    [{sourceUrl: 'javascript:alert(1)'}, /http/], [{pages: []}, /1–80/],
+    [{pages: Array(81).fill(JSON_STORY.pages[0])}, /1–80/],
+    [{pages: [null]}, /第 1 幅/], [{pages: [{image: '../escape.png', caption: '旁白'}]}, /ZIP/],
+    [{pages: [{image: '图片/01.png', caption: 'a'.repeat(3001)}]}, /旁白/],
+    [{generationModels: null}, /生成模型/], [{generationModels: ['text-model']}, /记录/],
+    [{generationModels: [{model: 7}]}, /模型名/], [{generationModels: [{model: ''}]}, /模型名/],
+    [{generationModels: [{model: 'm'.repeat(201)}]}, /模型名/],
+    [{generationModels: Array(1001).fill({model: 'text-model'})}, /1000/],
+  ];
+  for (const [changes, message] of invalid) {
+    const input = JSON.stringify({...JSON_STORY, ...changes}), bytes = jsonZip(input);
+    assert.throws(() => parseStoryJSON(input), message);
+    await assert.rejects(parseStoryArchive(bytes, OPTIONS), message);
+    assert.throws(() => prepareStory(bytes, {slug: 'tang-lang', author: OPTIONS.author}), message);
+  }
+  const duplicate = {...JSON_STORY, pages: [JSON_STORY.pages[0], JSON_STORY.pages[0]]};
+  await assert.rejects(parseStoryArchive(jsonZip(JSON.stringify(duplicate)), OPTIONS), /重复引用/);
+  const missing = {...JSON_STORY, pages: [{image: '图片/missing.png', caption: '缺图'}]};
+  await assert.rejects(parseStoryArchive(jsonZip(JSON.stringify(missing)), OPTIONS), /缺少第 1/);
+  const oversized = zip([['故事.json', ' '.repeat(ZIP_LIMITS.markdownBytes + 1)], ...entries()]);
+  await assert.rejects(parseStoryArchive(oversized, OPTIONS), /过大/);
+  assert.throws(() => prepareStory(oversized, {slug: 'tang-lang', author: OPTIONS.author}), /过大/);
+  assert.equal(parseStoryJSON(JSON.stringify({...JSON_STORY, generationModels: [{model: 'm'.repeat(200)}]})).generationModels[0].length, 200);
+  assert.equal(parseStoryJSON(JSON.stringify({...JSON_STORY, pages: [{image: '图片/01.png', caption: 'a'.repeat(3000)}]})).pages[0].caption.length, 3000);
+});
+
+test('public manifests retain only validated model names while legacy manifests remain unchanged', () => {
+  const manifest = prepareStory(storyZip(), {slug: 'tang-lang', author: OPTIONS.author}).manifest;
+  assert.deepEqual(validateManifest({...manifest, generationModels: [' text-model ', 'text-model', 'image-model']}).generationModels,
+    ['text-model', 'image-model']);
+  assert.equal(validateManifest(manifest).generationModels, undefined);
+  assert.deepEqual(validateManifest({...manifest, storyboardModels: [' storyboard-model ', 'storyboard-model']}).storyboardModels,
+    ['storyboard-model']);
+  assert.equal(validateManifest(manifest).storyboardModels, undefined);
+  assert.deepEqual(validateGenerationModels(['<img src=x onerror=alert(1)>']), ['<img src=x onerror=alert(1)>']);
+  for (const value of [null, 'model', [7], [''], ['m'.repeat(201)], Array(1001).fill('model')]) {
+    assert.throws(() => validateManifest({...manifest, generationModels: value}), /模型/);
+    assert.throws(() => validateManifest({...manifest, storyboardModels: value}), /模型/);
+  }
 });
 
 test('ZIP parser refuses traversal, malformed UTF-8, case collisions, special files, and encryption', async () => {

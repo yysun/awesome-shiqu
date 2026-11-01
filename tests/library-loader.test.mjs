@@ -1,3 +1,4 @@
+// Validate lightweight catalogue loading and archive boundaries without external network requests.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assetURL, githubConfig, loadCatalog, loadArchive, responseBytes, validateCatalog, MAX_ZIP_BYTES} from '../site/assets/library.mjs';
@@ -74,6 +75,27 @@ test('remote catalogue is requested from the configured repository and archive U
   for (const {url, options} of mock.calls) {
     assert.equal(options.credentials, new URL(url).origin === ROOT.origin ? 'same-origin' : 'omit'); assert.ok(options.signal instanceof AbortSignal);
   }
+});
+
+test('catalogue storyboard credits validate model names without guessing from generic generation models', () => {
+  const loaded = validateCatalog(catalog({...entry(false), storyboardModels: [' storyboard-model ', 'storyboard-model']}), {root: ROOT});
+  assert.deepEqual(loaded[0].storyboardModels, ['storyboard-model']);
+  assert.equal(validateCatalog(catalog({...entry(false), generationModels: ['image-model']}), {root: ROOT})[0].storyboardModels, undefined);
+  for (const value of [null, 'model', [7], [''], ['m'.repeat(201)], Array(1001).fill('model')]) {
+    assert.throws(() => validateCatalog(catalog({...entry(false), storyboardModels: value}), {root: ROOT}), /模型/);
+  }
+});
+
+test('remote storyboard credits load from the lightweight catalogue without downloading ZIPs', async () => {
+  const mock = fakeFetcher(new Map([
+    [new URL('config.json', ROOT).href, jsonResponse({github: GITHUB})],
+    [`${RAW}/main/catalog/catalog.json`, jsonResponse(catalog({...entry(), storyboardModels: ['storyboard-model']}))],
+  ]));
+  const loaded = await loadCatalog({root: ROOT, fetcher: mock.fetcher});
+  assert.equal(loaded.source, 'github');
+  assert.deepEqual(loaded.stories[0].storyboardModels, ['storyboard-model']);
+  assert.equal(mock.calls.length, 2);
+  assert.equal(mock.calls.some(call => call.url.endsWith('.zip')), false);
 });
 
 test('404 and network failures use the local published catalogue without losing the failure state', async () => {
