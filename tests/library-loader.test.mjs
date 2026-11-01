@@ -7,6 +7,7 @@ const ROOT = new URL('https://reader.example/awesome-shiqu/');
 const GITHUB = {owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', directory: 'works', catalog: 'catalog/catalog.json'};
 const COMMIT = '1234567890abcdef1234567890abcdef12345678';
 const RAW = `https://raw.githubusercontent.com/${GITHUB.owner}/${GITHUB.repo}`;
+const API = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/catalog/catalog.json?ref=main`;
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3ioAAAAASUVORK5CYII=', 'base64');
 const SOURCE = '# 小故事\n\n从一幅画读起。\n\n出处：《测试古书》\n\n## 第 1 幅\n\n图片：图片/01.png\n\n### 旁白\n\n这是一段故事。\n\n### 画面提示词\n\nPRIVATE-IMAGE-PROMPT\n';
 
@@ -49,6 +50,7 @@ function fakeFetcher(routes) {
     calls,
     fetcher: async (input, options = {}) => {
       const url = String(input); calls.push({url, options});
+      if (url === API && !routes.has(url)) return new Response('Not found', {status: 404});
       assert.ok(routes.has(url), `Unexpected request: ${url}`);
       const result = routes.get(url);
       if (result instanceof Error) throw result;
@@ -85,6 +87,20 @@ test('404 and network failures use the local published catalogue without losing 
     assert.equal(loaded.stories[0].archiveURL, new URL('works/alice/tiny.zip', ROOT).href);
     assert.equal(loaded.stories[0].coverURL, new URL('catalog/covers/alice--tiny.png', ROOT).href);
   }
+});
+
+test('a newly published GitHub catalogue can use the public Contents API when the raw URL is not ready', async () => {
+  const mock = fakeFetcher(new Map([
+    [new URL('config.json', ROOT).href, jsonResponse({github: GITHUB})],
+    [`${RAW}/main/catalog/catalog.json`, new Response('Not found', {status: 404})],
+    [API, jsonResponse(catalog(entry()))],
+  ]));
+  const loaded = await loadCatalog({root: ROOT, fetcher: mock.fetcher});
+  assert.equal(loaded.source, 'github'); assert.equal(loaded.remoteUnavailable, false);
+  assert.equal(loaded.stories[0].archiveURL, `${RAW}/${COMMIT}/works/alice/tiny.zip`);
+  assert.equal(mock.calls.length, 3);
+  assert.equal(mock.calls[2].options.credentials, 'omit');
+  assert.equal(mock.calls[2].options.headers.Accept, 'application/vnd.github.raw+json');
 });
 
 test('legacy missing configuration and explicitly local mode make no GitHub request', async () => {
@@ -147,7 +163,7 @@ test('a malformed remote catalogue falls back before fetching an unapproved arch
   ]));
   const loaded = await loadCatalog({root: ROOT, fetcher: mock.fetcher});
   assert.equal(loaded.source, 'local'); assert.equal(loaded.remoteUnavailable, true);
-  assert.equal(mock.calls.length, 3);
+  assert.equal(mock.calls.length, 4);
   assert.equal(mock.calls.some(call => call.url.startsWith('https://evil.example')), false);
 });
 

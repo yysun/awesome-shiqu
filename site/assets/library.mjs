@@ -77,8 +77,8 @@ export async function responseBytes(response, maximum, onProgress = () => {}) {
   for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.byteLength; }
   return data;
 }
-async function jsonFile(url, fetcher, maximum, milliseconds, credentials = 'omit') {
-  const response = await fetcher(url, {cache: 'no-cache', credentials, signal: AbortSignal.timeout(milliseconds)});
+async function jsonFile(url, fetcher, maximum, milliseconds, credentials = 'omit', headers = {}) {
+  const response = await fetcher(url, {cache: 'no-cache', credentials, headers, signal: AbortSignal.timeout(milliseconds)});
   check(response.ok, `作品目录暂时无法加载（${response.status}）。`);
   const bytes = await responseBytes(response, maximum);
   return JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
@@ -107,10 +107,16 @@ export async function loadCatalog({root = ROOT, fetcher = fetch} = {}) {
   catch { /* Older collections may have no remote configuration. */ }
   let remoteUnavailable = false;
   if (github && config.preferRemoteCatalog !== false) {
-    try {
-      const data = await jsonFile(rawURL(github, github.branch, github.catalog), fetcher, MAX_CATALOG_BYTES, 6500);
-      return {stories: validateCatalog(data, {root, github}), github, source: 'github', remoteUnavailable: false};
-    } catch { remoteUnavailable = true; }
+    const api = new URL(`https://api.github.com/repos/${encodeURIComponent(github.owner)}/${encodeURIComponent(github.repo)}/contents/${github.catalog.split('/').map(encodeURIComponent).join('/')}`);
+    api.searchParams.set('ref', github.branch);
+    // A freshly created branch may not yet be available at the raw-content CDN.
+    // Use the public Contents API only if that normal, cacheable route fails.
+    for (const [url, headers] of [[rawURL(github, github.branch, github.catalog), {}], [api, {Accept: 'application/vnd.github.raw+json'}]]) {
+      try {
+        const data = await jsonFile(url, fetcher, MAX_CATALOG_BYTES, 6500, 'omit', headers);
+        return {stories: validateCatalog(data, {root, github}), github, source: 'github', remoteUnavailable: false};
+      } catch { remoteUnavailable = true; }
+    }
   }
   const data = await jsonFile(new URL('catalog.json', root), fetcher, MAX_CATALOG_BYTES, 10000, 'same-origin');
   return {stories: validateCatalog(data, {root, github}), github, source: 'local', remoteUnavailable};
