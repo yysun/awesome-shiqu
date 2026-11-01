@@ -5,11 +5,22 @@ import path from 'node:path';
 import {promisify} from 'node:util';
 import {assert, LIMITS, regularFile} from './content.mjs';
 import {parseStoryArchive} from '../site/assets/story-archive.mjs';
+import {ZIP_LIMITS} from '../site/assets/zip.mjs';
+import {encodeArchivePath, validArchiveName, validContributor} from '../site/assets/archive-path.mjs';
 
 const run = promisify(execFile);
-export const MAX_ARCHIVE_BYTES = 25 * 1024 * 1024;
-export const validContributor = value => typeof value === 'string' && value.length <= 39 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
-export const validArchiveSlug = value => typeof value === 'string' && value.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+export const MAX_ARCHIVE_BYTES = ZIP_LIMITS.archiveBytes;
+export {validArchiveName, validContributor};
+export const validArchiveSlug = value => typeof value === 'string' && validArchiveName(`${value}.zip`);
+
+export function archiveStoryId(contributor, filename) {
+  assert(validContributor(contributor) && validArchiveName(filename), '作品文件名或作者目录无效。');
+  const stem = filename.slice(0, -4).normalize('NFC');
+  // Preserve existing links; other filenames get a stable ID independent of ZIP contents.
+  const slug = stem.length <= 64 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(stem) ? stem
+    : `zip-${createHash('sha256').update(stem).digest('hex').slice(0, 24)}`;
+  return `${contributor}--${slug}`;
+}
 
 async function publishedDate(root, relative, stat) {
   try {
@@ -35,17 +46,20 @@ export async function readArchiveLibrary(root, {retainArchive = true, retainCove
     assert(contributor.isDirectory() && !contributor.isSymbolicLink() && validContributor(contributor.name),
       `works/ 下只允许小写 GitHub 用户名目录：${contributor.name}`);
     const folder = path.join(works, contributor.name);
+    const filenames = new Set();
     for (const file of (await readdir(folder, {withFileTypes: true})).sort((a, b) => a.name.localeCompare(b.name))) {
-      const slug = file.name.endsWith('.zip') ? file.name.slice(0, -4) : '';
-      assert(file.isFile() && !file.isSymbolicLink() && validArchiveSlug(slug),
-        `作品必须是 works/<GitHub 用户名>/<小写作品编号>.zip：${contributor.name}/${file.name}`);
+      assert(file.isFile() && !file.isSymbolicLink() && validArchiveName(file.name),
+        `作品必须是 works/<GitHub 用户名>/<作品名>.zip；支持中文，文件名不能含路径分隔符、控制字符或过长：${contributor.name}/${file.name}`);
+      const key = file.name.normalize('NFC').toLowerCase();
+      assert(!filenames.has(key), `作品文件名仅大小写或 Unicode 形式不同：${contributor.name}/${file.name}`);
+      filenames.add(key);
       const relativePath = `works/${contributor.name}/${file.name}`, filename = path.join(root, relativePath);
       const stat = await lstat(filename);
-      assert(stat.size > 0 && stat.size <= MAX_ARCHIVE_BYTES, `${relativePath} 为空或超过 25 MiB。`);
+      assert(stat.size > 0 && stat.size <= MAX_ARCHIVE_BYTES, `${relativePath} 为空或超过 ${MAX_ARCHIVE_BYTES / 1024 / 1024} MiB。`);
       total += stat.size;
       assert(total <= LIMITS.siteBytes, '作品 ZIP 总量超过 950 MiB，请调整收藏规模。');
       const archive = await regularFile(filename, works, MAX_ARCHIVE_BYTES);
-      const id = `${contributor.name}--${slug}`;
+      const id = archiveStoryId(contributor.name, file.name);
       assert(!ids.has(id), `作品编号重复：${id}`); ids.add(id);
       let parsed;
       try {
@@ -57,7 +71,7 @@ export async function readArchiveLibrary(root, {retainArchive = true, retainCove
       stories.push({manifest: parsed.manifest, relativePath, sha256, archiveBytes: archive.length,
         coverName: `covers/${id}${path.extname(first.name)}`,
         coverExtension: path.extname(first.name),
-        ...(retainArchive ? {archive} : {}), ...(retainCover ? {cover: first.bytes} : {})});
+        ...(retainArchive ? {archive} : {}), ...(retainCover ? {cover: Uint8Array.from(first.bytes)} : {})});
     }
   }
   return stories.sort((a, b) => b.manifest.publishedAt.localeCompare(a.manifest.publishedAt) || a.manifest.id.localeCompare(b.manifest.id));
@@ -65,7 +79,7 @@ export async function readArchiveLibrary(root, {retainArchive = true, retainCove
 
 export function archiveCatalogEntry(story) {
   const {pages, ...metadata} = story.manifest;
-  return {...metadata, pageCount: pages.length, cover: story.coverName, archive: story.relativePath,
+  return {...metadata, pageCount: pages.length, cover: story.coverName, archive: encodeArchivePath(story.relativePath),
     sha256: story.sha256, archiveBytes: story.archiveBytes};
 }
 

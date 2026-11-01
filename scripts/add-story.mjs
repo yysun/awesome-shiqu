@@ -3,18 +3,18 @@ import {lstat, mkdir, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {assert} from './content.mjs';
-import {MAX_ARCHIVE_BYTES, validArchiveSlug, validContributor} from './archive-library.mjs';
+import {MAX_ARCHIVE_BYTES, archiveStoryId, validArchiveSlug, validContributor} from './archive-library.mjs';
 import {parseStoryArchive} from '../site/assets/story-archive.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export async function addStory(input, {author, slug}, root = ROOT) {
   assert(validContributor(author), '--author 必须是小写 GitHub 用户名。');
-  assert(validArchiveSlug(slug), '--slug 必须为不超过 64 字符的小写英文、数字与单个连字符。');
+  assert(validArchiveSlug(slug), '--slug 请填写作品文件名（不含 .zip），支持中文；不能含路径分隔符、控制字符或过长。');
   const stat = await lstat(input);
-  assert(stat.isFile() && !stat.isSymbolicLink() && stat.size > 0 && stat.size <= MAX_ARCHIVE_BYTES, '输入必须是最多 25 MiB 的普通 ZIP 文件。');
+  assert(stat.isFile() && !stat.isSymbolicLink() && stat.size > 0 && stat.size <= MAX_ARCHIVE_BYTES, `输入必须是最多 ${MAX_ARCHIVE_BYTES / 1024 / 1024} MiB 的普通 ZIP 文件。`);
   const bytes = await readFile(input);
-  const parsed = await parseStoryArchive(bytes, {id: `${author}--${slug}`, author, publishedAt: stat.mtime.toISOString().slice(0, 10)});
+  const parsed = await parseStoryArchive(bytes, {id: archiveStoryId(author, `${slug}.zip`), author, publishedAt: stat.mtime.toISOString().slice(0, 10)});
   const works = path.join(root, 'works'), destination = path.join(works, author);
   for (const folder of [works, destination]) {
     await mkdir(folder, {recursive: true});

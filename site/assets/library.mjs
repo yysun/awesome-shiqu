@@ -1,8 +1,10 @@
 import {parseStoryArchive} from './story-archive.mjs';
 import {sha256Hex} from './sha256.mjs';
+import {ZIP_LIMITS} from './zip.mjs';
+import {validArchivePath} from './archive-path.mjs';
 
 export const ROOT = new URL('../', import.meta.url);
-export const MAX_ZIP_BYTES = 25 * 1024 * 1024;
+export const MAX_ZIP_BYTES = ZIP_LIMITS.archiveBytes;
 const MAX_CATALOG_BYTES = 2 * 1024 * 1024;
 const validId = value => typeof value === 'string' && /^[a-z0-9][a-z0-9-]{0,119}$/.test(value);
 const isObject = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -28,32 +30,41 @@ function rawURL(github, ref, path) {
   return new URL(`https://raw.githubusercontent.com/${encodeURIComponent(github.owner)}/${encodeURIComponent(github.repo)}/${encodeURIComponent(ref)}/${path.split('/').map(encodeURIComponent).join('/')}`);
 }
 
+function pathSegments(pathname) {
+  return pathname.split('/').map(part => {
+    const decoded = decodeURIComponent(part);
+    check(!/[\\/]/.test(decoded), '作品文件路径无效。');
+    return decoded;
+  });
+}
+
 // Only the selected repository or this site's own files can supply artwork.
 export function assetURL(value, {root = ROOT, github = null, archive = false} = {}) {
   check(typeof value === 'string' && value.length <= 2000 && !/[\\\u0000-\u0020]/.test(value), '作品文件地址无效。');
   const url = new URL(value, root);
   check(/^https?:$/.test(url.protocol) && !url.username && !url.password && !url.hash, '作品文件地址无效。');
   if (url.origin === root.origin && url.pathname.startsWith(root.pathname)) {
-    const relative = decodeURIComponent(url.pathname.slice(root.pathname.length));
-    check(cleanPath(relative), '作品文件路径无效。');
-    if (archive) check(/^works\/[a-z0-9-]+\/[a-z0-9-]+\.zip$/.test(relative), '作品 ZIP 必须位于投稿目录。');
+    const relative = pathSegments(url.pathname.slice(root.pathname.length)).join('/');
+    if (archive) check(validArchivePath(relative), '作品 ZIP 必须位于投稿目录，且使用有效文件名。');
+    else check(cleanPath(relative), '作品文件路径无效。');
     return url;
   }
   check(github && url.origin === 'https://raw.githubusercontent.com', '作品文件必须来自已设置的 GitHub 仓库。');
-  const segments = url.pathname.slice(1).split('/').map(decodeURIComponent);
+  const segments = pathSegments(url.pathname.slice(1));
   check(segments[0] === github.owner && segments[1] === github.repo, '作品文件来自其他仓库。');
   const ref = segments[2], relative = segments.slice(3).join('/');
-  check(cleanPath(relative), '作品文件路径无效。');
   if (archive) {
-    check(/^[0-9a-f]{40}$/i.test(ref) && relative.startsWith(github.directory + '/') && relative.endsWith('.zip'), '作品 ZIP 必须指向已经收录的 GitHub 提交。');
+    check(/^[0-9a-f]{40}$/i.test(ref) && validArchivePath(relative, github.directory), '作品 ZIP 必须指向已经收录的 GitHub 提交。');
   } else {
+    check(cleanPath(relative), '作品文件路径无效。');
     const directory = github.catalog.split('/').slice(0, -1).join('/');
     check((ref === github.branch || /^[0-9a-f]{40}$/i.test(ref)) && relative.startsWith((directory ? directory + '/' : '') + 'covers/'), '作品封面路径无效。');
   }
   return url;
 }
 
-export async function responseBytes(response, maximum, onProgress = () => {}) {
+export async function responseBytes(response, maximum, onProgress = () => {}, expectedBytes = 0) {
+  check(Number.isSafeInteger(expectedBytes) && expectedBytes >= 0 && expectedBytes <= maximum, '下载文件大小无效。');
   const length = Number(response.headers.get('content-length')) || 0;
   check(!length || length <= maximum, '下载文件超过允许大小。');
   if (!response.body?.getReader) {
@@ -61,6 +72,8 @@ export async function responseBytes(response, maximum, onProgress = () => {}) {
     check(data.length <= maximum, '下载文件超过允许大小。');
     onProgress(data.length, length || data.length); return data;
   }
+  // Catalogued ZIPs have a verified size: keep one download buffer for large exports.
+  const data = expectedBytes ? new Uint8Array(expectedBytes) : null;
   const reader = response.body.getReader(), chunks = [];
   let size = 0;
   try {
@@ -69,13 +82,18 @@ export async function responseBytes(response, maximum, onProgress = () => {}) {
       if (done) break;
       size += value.byteLength;
       check(size <= maximum, '下载文件超过允许大小。');
-      chunks.push(value); onProgress(size, length);
+      if (data) {
+        check(size <= data.length, '作品 ZIP 大小与收录记录不符，请刷新作品集重试。');
+        data.set(value, size - value.byteLength);
+      } else chunks.push(value);
+      onProgress(size, expectedBytes || length);
     }
   } catch (error) { await reader.cancel().catch(() => {}); throw error; }
   finally { reader.releaseLock(); }
-  const data = new Uint8Array(size); let offset = 0;
-  for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.byteLength; }
-  return data;
+  if (data) return data.subarray(0, size);
+  const collected = new Uint8Array(size); let offset = 0;
+  for (const chunk of chunks) { collected.set(chunk, offset); offset += chunk.byteLength; }
+  return collected;
 }
 async function jsonFile(url, fetcher, maximum, milliseconds, credentials = 'omit', headers = {}) {
   const response = await fetcher(url, {cache: 'no-cache', credentials, headers, signal: AbortSignal.timeout(milliseconds)});
@@ -135,9 +153,9 @@ function createArtwork(prepared) {
 export async function loadArchive(entry, {fetcher = fetch, onProgress = () => {}, root = ROOT} = {}) {
   check(typeof entry.archiveURL === 'string', '作品 ZIP 地址缺失。');
   const credentials = new URL(entry.archiveURL).origin === root.origin ? 'same-origin' : 'omit';
-  const response = await fetcher(entry.archiveURL, {credentials, signal: AbortSignal.timeout(60000)});
+  const response = await fetcher(entry.archiveURL, {credentials, signal: AbortSignal.timeout(300000)});
   check(response.ok, '作品 ZIP 暂时无法下载，请稍后重试。');
-  const bytes = await responseBytes(response, MAX_ZIP_BYTES, onProgress);
+  const bytes = await responseBytes(response, MAX_ZIP_BYTES, onProgress, entry.archiveBytes);
   check(bytes.length === entry.archiveBytes, '作品 ZIP 大小与收录记录不符，请刷新作品集重试。');
   const digest = await sha256Hex(bytes);
   check(digest === entry.sha256, '作品 ZIP 与收录版本不符，请刷新作品集重试。');
@@ -146,7 +164,7 @@ export async function loadArchive(entry, {fetcher = fetch, onProgress = () => {}
   return createArtwork(prepared);
 }
 export async function loadLocalArchive(file) {
-  check(file && /\.zip$/i.test(file.name) && file.size > 0 && file.size <= MAX_ZIP_BYTES, '请选择不超过 25 MiB 的拾趣 ZIP 文件。');
+  check(file && /\.zip$/i.test(file.name) && file.size > 0 && file.size <= MAX_ZIP_BYTES, `请选择不超过 ${MAX_ZIP_BYTES / 1024 / 1024} MiB 的拾趣 ZIP 文件。`);
   const bytes = new Uint8Array(await file.arrayBuffer());
   return createArtwork(await parseStoryArchive(bytes, {id: 'preview--story', author: '本地试读', publishedAt: new Date().toISOString().slice(0, 10)}));
 }

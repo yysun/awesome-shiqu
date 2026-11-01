@@ -7,12 +7,14 @@
 ## 提交一篇作品
 
 1. 在拾趣中完成故事，下载「分镜与图片 ZIP」。检查完整 ZIP 中的文字、图片和提示词是否适合公开。
-2. Fork 本仓库，把 ZIP 放到 `works/<你的 GitHub 用户名>/<作品编号>.zip`，例如 `works/alice/tang-lang-bu-chan.zip`。
+2. Fork 本仓库，把 ZIP 原样放到 `works/<你的 GitHub 用户名>/<作品名>.zip`，例如 `works/yysun/黄忠智取定军山.zip`。可以保留拾趣导出的中文文件名。
 3. 发起 PR，在模板中说明出处、收录理由和展示许可。维护者审核通过后合并。
 
 **投稿只需要一个 ZIP。** 标题、原著、图片顺序、旁白、结语和改编说明从 `分镜.md` 提取；用户名目录作为默认署名。封面与目录自动生成，无需手写 JSON，也不用提交解压后的图片。
 
-作品编号使用小写英文、数字和单个连字符，最多 64 字符。每个 ZIP 不超过 **25 MiB**，含 1–80 幅画面；单张图片不超过 12 MiB，支持 PNG、JPEG、WebP。ZIP 使用普通 STORE 或 DEFLATE 压缩。具体见 [贡献指南](CONTRIBUTING.md)。
+作者目录使用小写 GitHub 用户名；ZIP 文件名支持中文、大小写英文、内部空格和常用标点，无需改成拼音。每个 ZIP 不超过 **100 MiB**，含 1–80 幅画面；单张图片不超过 12 MiB，支持 PNG、JPEG、WebP。ZIP 使用普通 STORE 或 DEFLATE 压缩。
+
+**GitHub 网页上传每个文件最多 25 MiB**；超过 25 MiB、未超过 100 MiB 的 ZIP 可通过 GitHub Desktop 或命令行提交。这是上传方式的限制，阅读器支持读取仓库中不超过 100 MiB 的 ZIP。参见 [GitHub 上传文件说明](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository)与[大文件限制](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github)。操作步骤见 [贡献指南](CONTRIBUTING.md)。
 
 ## 阅读站怎样更新
 
@@ -23,7 +25,7 @@
 | 打开书架 | 优先读取 GitHub 的轻量作品目录，只载入目录和封面 |
 | 打开故事 | 从 GitHub 的 `works/` 下载这一篇 ZIP，核对 SHA-256，在浏览器中展开图片和旁白 |
 
-ZIP 地址固定到生成目录时的源码 commit；修改文件后产生新摘要。旧链接仍以作品编号定位，打开时读取当前收录版本。
+ZIP 地址固定到生成目录时的源码 commit；修改文件后产生新摘要。网站自动生成稳定的阅读标识，中文原名保留在仓库中。修订时保持作者目录和 ZIP 文件名不变，可保留分享链接，打开时读取当前收录版本。
 
 Sites 与 GitHub Pages 可以使用同一套阅读器。Sites 读取 GitHub 上的目录与 ZIP，因此新增作品不需要重新部署 Sites。GitHub 暂时不可用时，书架可使用本次站点构建内置的目录；GitHub 尚未建立时，空书架仍能打开。
 
@@ -51,13 +53,13 @@ Sites 与 GitHub Pages 可以使用同一套阅读器。Sites 读取 GitHub 上�
 准备 Node 24 和 pnpm 11.25.0。项目没有第三方运行依赖。
 
 ```bash
-pnpm add:story '/path/故事.zip' --author alice --slug tang-lang-bu-chan
+pnpm add:story '/path/黄忠智取定军山.zip' --author yysun --slug '黄忠智取定军山'
 pnpm test
 pnpm build
 pnpm preview
 ```
 
-`add:story` 是可选的校验与复制快捷方式；直接把 ZIP 放进对应目录也可以。打开终端显示的地址，检查翻页、长卷、手机显示、收藏与阅读进度。`pnpm validate` 单独检查内容；`pnpm catalog` 在已提交的 Git 仓库中生成供 Sites 读取的远程目录。
+`add:story` 是可选的校验与复制快捷方式；`--slug` 指定保存的作品文件名，不含 `.zip`，可以直接填写中文名。直接把 ZIP 放进对应目录也可以。打开终端显示的地址，检查翻页、长卷、手机显示、收藏与阅读进度。`pnpm validate` 单独检查内容；`pnpm catalog` 在已提交的 Git 仓库中生成供静态阅读站读取的远程目录。
 
 本地 ZIP 未提交时，日期暂用文件修改日期；合并后使用 Git 记录中的首次提交日期。原有 `stories/<slug>/story.json` 格式与 `pnpm import:story` 仍可本地构建阅读；远程目录只接受 `works/` ZIP。有旧作品时，先将原始拾趣 ZIP 放入 `works/` 并移除相应旧目录，再启用自动发布。
 
@@ -73,7 +75,7 @@ pnpm preview
 
 | 路径 | 用途 |
 | --- | --- |
-| `works/<GitHub 用户名>/<作品编号>.zip` | 经 PR 审阅的作品原始存档 |
+| `works/<GitHub 用户名>/<作品名>.zip` | 经 PR 审阅的作品原始存档，保留中文原名 |
 | `catalog/catalog.json` | 自动生成的远程书架目录 |
 | `catalog/covers/` | 自动生成的封面，按内容摘要命名 |
 | `site/` | 书架、阅读器、ZIP 解析及站点配置 |

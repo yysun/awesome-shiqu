@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {assetURL, githubConfig, loadCatalog, loadArchive, responseBytes, validateCatalog, MAX_ZIP_BYTES} from '../site/assets/library.mjs';
-import {crc32} from '../site/assets/zip.mjs';
+import {crc32, ZIP_LIMITS} from '../site/assets/zip.mjs';
+import {encodeArchivePath} from '../site/assets/archive-path.mjs';
 
 const ROOT = new URL('https://reader.example/awesome-shiqu/');
 const GITHUB = {owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', directory: 'works', catalog: 'catalog/catalog.json'};
@@ -144,6 +145,10 @@ test('asset boundaries reject other origins, repositories, moving ZIP refs, and 
     `${RAW}/${COMMIT}/works/alice%2f..%2f..%2fprivate/tiny.zip`,
     '../../works/alice/tiny.zip',
     'works/alice%2f..%2f..%2fprivate/tiny.zip',
+    'works/alice/子目录%2f作品.zip',
+    `${RAW}/${COMMIT}/works/alice/子目录%2f作品.zip`,
+    `${RAW}/${COMMIT}/works/alice/nested/tiny.zip`,
+    `${RAW}/${COMMIT}/works/alice/名字%00.zip`,
     'https://user:secret@raw.githubusercontent.com/yysun/awesome-shiqu/' + COMMIT + '/works/alice/tiny.zip',
     'data:application/zip;base64,AAAA',
     'javascript:alert(1)',
@@ -151,6 +156,23 @@ test('asset boundaries reject other origins, repositories, moving ZIP refs, and 
   assert.throws(() => assetURL(`${RAW}/main/works/cover.png`, {root: ROOT, github: GITHUB}), /封面/);
   assert.throws(() => githubConfig({github: {...GITHUB, catalog: '../catalog.json'}}), /目录/);
   assert.throws(() => githubConfig({github: {...GITHUB, owner: 'owner/other'}}), /账号/);
+});
+
+test('catalogues accept large Shiqu exports and correctly encoded Chinese filenames', async () => {
+  assert.equal(MAX_ZIP_BYTES, ZIP_LIMITS.archiveBytes);
+  const path = encodeArchivePath('works/alice/黄忠 Story #1 (100%).zip');
+  for (const remote of [false, true]) {
+    const item = {...entry(remote), archive: remote ? `${RAW}/${COMMIT}/${path}` : path, archiveBytes: 96680790};
+    const [valid] = validateCatalog(catalog(item), {root: ROOT, github: GITHUB});
+    assert.equal(decodeURIComponent(new URL(valid.archiveURL).pathname).endsWith('/works/alice/黄忠 Story #1 (100%).zip'), true);
+    assert.throws(() => validateCatalog(catalog({...item, archiveBytes: MAX_ZIP_BYTES + 1}), {root: ROOT, github: GITHUB}), /目录信息/);
+    let requested;
+    const artwork = await loadArchive({...valid, archiveBytes: ZIP.length}, {
+      root: ROOT, fetcher: async url => { requested = url; return new Response(ZIP); },
+    });
+    try { assert.equal(requested, valid.archiveURL); assert.equal(artwork.story.title, '小故事'); }
+    finally { artwork.dispose(); }
+  }
 });
 
 test('a malformed remote catalogue falls back before fetching an unapproved archive', async () => {
@@ -170,6 +192,7 @@ test('a malformed remote catalogue falls back before fetching an unapproved arch
 test('archive loading verifies byte count and SHA-256 before interpreting the story', async () => {
   const [valid] = validateCatalog(catalog(entry()), {root: ROOT, github: GITHUB});
   await assert.rejects(loadArchive({...valid, archiveBytes: ZIP.length + 1}, {fetcher: async () => new Response(ZIP)}), /大小与收录/);
+  await assert.rejects(loadArchive({...valid, archiveBytes: ZIP.length - 1}, {fetcher: async () => new Response(ZIP)}), /大小与收录/);
   await assert.rejects(loadArchive({...valid, sha256: '0'.repeat(64)}, {fetcher: async () => new Response(ZIP)}), /收录版本/);
   await assert.rejects(loadArchive(valid, {fetcher: async () => new Response('missing', {status: 404})}), /暂时无法下载/);
   await assert.rejects(loadArchive(valid, {fetcher: async () => new Response(ZIP, {headers: {'content-length': String(MAX_ZIP_BYTES + 1)}})}), /允许大小/);
@@ -179,6 +202,13 @@ test('archive loading verifies byte count and SHA-256 before interpreting the st
     cancel() { cancelled = true; },
   });
   await assert.rejects(responseBytes(new Response(stream, {headers: {'content-length': '1'}}), 6), /允许大小/);
+  assert.equal(cancelled, true);
+  cancelled = false;
+  const oversized = new ReadableStream({
+    start(controller) { controller.enqueue(new Uint8Array(4)); controller.enqueue(new Uint8Array(4)); },
+    cancel() { cancelled = true; },
+  });
+  await assert.rejects(responseBytes(new Response(oversized), 10, () => {}, 6), /大小与收录/);
   assert.equal(cancelled, true);
 });
 

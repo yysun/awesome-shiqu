@@ -1,7 +1,7 @@
 // Portable ZIP reader for Node and modern browsers. Files remain in memory;
 // archive paths are never written to disk or used as network addresses.
 export const ZIP_LIMITS = Object.freeze({
-  archiveBytes: 25 * 1024 * 1024,
+  archiveBytes: 100 * 1024 * 1024,
   expandedBytes: 256 * 1024 * 1024,
   imageBytes: 12 * 1024 * 1024,
   markdownBytes: 1024 * 1024,
@@ -68,7 +68,7 @@ async function inflate(bytes, size, name) {
 
 export async function readZip(input) {
   const bytes = input instanceof ArrayBuffer ? new Uint8Array(input) : input;
-  assert(bytes instanceof Uint8Array && bytes.length >= 22 && bytes.length <= ZIP_LIMITS.archiveBytes, 'ZIP 为空、损坏或超过 25 MiB。');
+  assert(bytes instanceof Uint8Array && bytes.length >= 22 && bytes.length <= ZIP_LIMITS.archiveBytes, 'ZIP 为空、损坏或超过 100 MiB。');
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const u16 = offset => view.getUint16(offset, true), u32 = offset => view.getUint32(offset, true);
   let end = -1;

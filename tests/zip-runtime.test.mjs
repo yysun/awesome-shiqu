@@ -145,7 +145,7 @@ test('ZIP parser rejects corruption, truncated directories, false sizes, and bou
   const descriptor = zip([['image.png', PNG]], {deflate: true, descriptor: true});
   descriptor[centralOffset(descriptor) - 12] ^= 1;
   await assert.rejects(readZip(descriptor), /描述符/);
-  await assert.rejects(readZip(new Uint8Array(ZIP_LIMITS.archiveBytes + 1)), /25 MiB/);
+  await assert.rejects(readZip(new Uint8Array(ZIP_LIMITS.archiveBytes + 1)), /100 MiB/);
   await assert.rejects(readZip(zip(Array.from({length: ZIP_LIMITS.entries + 1}, (_, index) => [`${index}.txt`, '']))), /文件数量/);
 });
 
@@ -182,4 +182,42 @@ test('PNG dimensions cannot request an oversized browser decoding surface', asyn
     await assert.rejects(parseStoryArchive(zip([['分镜.md', SOURCE], ['图片/01.png', oversized], ['图片/02.png', PNG]]), OPTIONS), /PNG 图片尺寸过大/);
   }
   assert.equal((await parseStoryArchive(storyZip(), OPTIONS)).images[0].mime, 'image/png');
+});
+
+test('STORE exports larger than 25 MiB remain within the aligned 100 MiB archive limit', async () => {
+  // Allocate one 26 MiB archive rather than making several copies of a large
+  // fixture. STORE output views must share it without copying each file.
+  const sizes = [9, 9, 8].map(size => size * 1024 * 1024);
+  const names = sizes.map((_, index) => Buffer.from(`images/${index + 1}.bin`));
+  const localSize = sizes.reduce((total, size, index) => total + 30 + names[index].length + size, 0);
+  const centralSize = names.reduce((total, name) => total + 46 + name.length, 0);
+  const bytes = Buffer.alloc(localSize + centralSize + 22);
+  let local = 0, central = localSize;
+  for (let i = 0; i < sizes.length; i++) {
+    const size = sizes[i], name = names[i], start = local + 30 + name.length;
+    const checksum = crc32(bytes.subarray(start, start + size));
+    bytes.writeUInt32LE(0x04034b50, local); bytes.writeUInt16LE(20, local + 4);
+    bytes.writeUInt16LE(0x800, local + 6); bytes.writeUInt32LE(checksum, local + 14);
+    bytes.writeUInt32LE(size, local + 18); bytes.writeUInt32LE(size, local + 22);
+    bytes.writeUInt16LE(name.length, local + 26); name.copy(bytes, local + 30);
+    bytes.writeUInt32LE(0x02014b50, central); bytes.writeUInt16LE(20, central + 4);
+    bytes.writeUInt16LE(20, central + 6); bytes.writeUInt16LE(0x800, central + 8);
+    bytes.writeUInt32LE(checksum, central + 16); bytes.writeUInt32LE(size, central + 20);
+    bytes.writeUInt32LE(size, central + 24); bytes.writeUInt16LE(name.length, central + 28);
+    bytes.writeUInt32LE(local, central + 42); name.copy(bytes, central + 46);
+    local = start + size; central += 46 + name.length;
+  }
+  bytes.writeUInt32LE(0x06054b50, central);
+  bytes.writeUInt16LE(sizes.length, central + 8); bytes.writeUInt16LE(sizes.length, central + 10);
+  bytes.writeUInt32LE(centralSize, central + 12); bytes.writeUInt32LE(localSize, central + 16);
+  assert.equal(ZIP_LIMITS.archiveBytes, 100 * 1024 * 1024);
+  assert.ok(bytes.length > 25 * 1024 * 1024 && bytes.length < ZIP_LIMITS.archiveBytes);
+  const files = await readZip(bytes);
+  assert.equal(files.size, sizes.length);
+  for (let i = 0; i < sizes.length; i++) {
+    const file = files.get(names[i].toString());
+    assert.equal(file.length, sizes[i]); assert.equal(file.buffer, bytes.buffer);
+  }
+  assert.equal(ZIP_LIMITS.expandedBytes, 256 * 1024 * 1024);
+  assert.equal(ZIP_LIMITS.imageBytes, 12 * 1024 * 1024);
 });
