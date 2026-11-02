@@ -1,5 +1,7 @@
 // Render untrusted story prose as text and retain reading progress across grid and scroll layouts.
 import { ROOT, validId, catalog, internalURL, externalURL, storyLink, storyRoute, savedStories, toggleSaved, progressFor, saveProgress, node, toast } from './common.mjs';
+import {facetOf, facetRoutes, groupByBook, storyRoutes} from './story-url.mjs';
+import {storyCard} from './cards.mjs';
 import {loadArchive, loadLocalArchive, loadManifestArtwork} from './library.mjs';
 import {publicationFields,pagePublicFields,publicText,validateAI,publicURL} from './story-publication.mjs';
 import {validateGenerationModels} from './story-archive.mjs';
@@ -7,7 +9,7 @@ const $ = selector => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
 const id = params.get('story') || document.querySelector('meta[name="shiqu:story"]')?.content || null;
 const localPreview = params.get('preview') === '1';
-let story, imageURLs, artwork, current = 0, mode = 'multi', pages = [], ticking = false;
+let story, imageURLs, artwork, entries = [], current = 0, mode = 'multi', pages = [], ticking = false;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function updatePage(index, save = true) {
   current = Math.max(0, Math.min(pages.length - 1, index));
@@ -50,6 +52,42 @@ function pageElement(page, index, manifestURL) {
   const caption = node('figcaption'); caption.append(node('p', 'caption-text', `${index + 1}. ${page.caption}`));
   figure.append(art, caption); return figure;
 }
+// Tell deep-linked readers where they are and what to read next, all from the lightweight catalogue.
+function placeStory(route, bookName) {
+  const bookURL = new URL(route.bookPath, ROOT);
+  $('#back-link').href = bookURL; $('#back-link').setAttribute('aria-label', `返回${bookName}`); $('#back-label').textContent = bookName;
+  $('#read-more').href = bookURL;
+  const crumb = (text, href) => { const item = href ? node('a', '', text) : node('span', '', text); if (href) item.href = href; else item.setAttribute('aria-current', 'page'); return item; };
+  $('#breadcrumb').replaceChildren(crumb('首页', ROOT), crumb('书目', new URL('books/', ROOT)), crumb(bookName, bookURL), crumb(story.title));
+  $('#breadcrumb').hidden = false;
+  if (params.get('story')) {
+    const canonical = document.querySelector('link[rel="canonical"]') || document.head.appendChild(node('link'));
+    canonical.rel = 'canonical'; canonical.href = new URL(route.path, ROOT).href;
+  }
+  const routes = storyRoutes(entries), facets = facetRoutes(entries), saved = savedStories();
+  const book = groupByBook(entries, routes).get(route.bookSlug), index = book ? book.stories.findIndex(entry => entry.id === story.id) : -1;
+  const neighbours = [];
+  if (index > 0) neighbours.push(['上一篇', book.stories[index - 1]]);
+  if (index >= 0 && index < book.stories.length - 1) neighbours.push(['下一篇', book.stories[index + 1]]);
+  $('#story-nav').replaceChildren(...neighbours.map(([label, entry]) => {
+    const link = node('a', 'story-nav-link'); link.href = storyLink(entry.id);
+    link.classList.add(label === '上一篇' ? 'story-nav-prev' : 'story-nav-next'); link.append(node('span', 'story-nav-label', label), node('span', 'story-nav-title', entry.title)); return link;
+  }));
+  $('#story-nav').hidden = neighbours.length === 0;
+  const skip = new Set([story.id, ...neighbours.map(([, entry]) => entry.id)]);
+  const moreBook = book ? book.stories.filter(entry => !skip.has(entry.id)).slice(0, 3) : [];
+  const theme = facetOf(story, 'theme', facets);
+  for (const entry of moreBook) skip.add(entry.id);
+  const moreTheme = theme ? [...theme.stories].sort((a, b) => Number(routes.get(a.id)?.bookSlug === route.bookSlug) - Number(routes.get(b.id)?.bookSlug === route.bookSlug)).filter(entry => !skip.has(entry.id)).slice(0, 3) : [];
+  const fill = (id, list, title, href, linkText) => {
+    const group = $(id); group.hidden = list.length === 0; if (!list.length) return;
+    group.querySelector('h2').textContent = title; group.querySelector('.text-link').href = href; group.querySelector('.text-link').textContent = linkText;
+    group.querySelector('.story-grid').replaceChildren(...list.map(entry => storyCard(entry, {saved})));
+  };
+  fill('#more-book', moreBook, `《${bookName}》更多`, bookURL, `全部 ${book?.stories.length || 0} 篇 →`);
+  fill('#more-theme', moreTheme, `同主题：${theme?.title || ''}`, theme ? new URL(theme.path, ROOT) : ROOT, theme ? `全部 ${theme.stories.length} 篇 →` : '');
+  $('#recommend').hidden = moreBook.length === 0 && moreTheme.length === 0;
+}
 async function share() {
   if (localPreview) return;
   const url = storyLink(story.id).href;
@@ -85,7 +123,8 @@ try {
     $('#preview-notice').hidden = false;
   } else {
     if (!validId(id)) throw Error('请先从作品集中选择一篇故事。');
-    const entries = await catalog(), entry = entries.find(value => value.id === id);
+    entries = await catalog();
+    const entry = entries.find(value => value.id === id);
     if (!entry) throw Error('这篇故事尚未收录，或已从作品集中移除。');
     if (entry.archiveURL) {
       $('#reader-status').textContent = '正在下载故事 ZIP…';
@@ -111,6 +150,7 @@ try {
   const route = localPreview ? null : storyRoute(story.id);
   if (route) { const bookLink = node('a', '', bookName); bookLink.href = new URL(route.bookPath, ROOT); $('#story-source').replaceChildren(bookLink); }
   else $('#story-source').textContent = bookName;
+  if (route) placeStory(route, bookName);
   $('#story-title').textContent = story.title;
   $('#story-hook').textContent = story.hook || '';
   const models = validateGenerationModels(story.generationModels);

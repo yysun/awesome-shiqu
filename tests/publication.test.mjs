@@ -26,7 +26,7 @@ function zip(entries){
  const directory=Buffer.concat(central),end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50);end.writeUInt16LE(entries.size,8);end.writeUInt16LE(entries.size,10);end.writeUInt32LE(directory.length,12);end.writeUInt32LE(offset,16);return Buffer.concat([...local,directory,end]);
 }
 function jsonArchive(data){const changed=new Map(files);changed.set('故事.json',Buffer.from(JSON.stringify(data)));return zip(changed);}
-async function workspace(t){const root=await mkdtemp(path.join(os.tmpdir(),'awesome-publication-'));t.after(()=>rm(root,{recursive:true,force:true}));await cp('site',path.join(root,'site'),{recursive:true});return root;}
+async function workspace(t){const root=await mkdtemp(path.join(os.tmpdir(),'awesome-publication-'));t.after(()=>rm(root,{recursive:true,force:true}));await cp('site',path.join(root,'site'),{recursive:true});await rm(path.join(root,'site/featured.json'),{force:true});return root;}
 
 test('real production export retains public credits, original source, version, AI and exact WebP/XMP bytes in both parsers',async()=>{
  const parsed=await parseStoryArchive(bytes,options),imported=prepareStory(bytes,importOptions);

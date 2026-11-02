@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {assetURL, githubConfig, loadCatalog, loadArchive, responseBytes, validateCatalog, MAX_ZIP_BYTES} from '../site/assets/library.mjs';
 import {crc32, ZIP_LIMITS} from '../site/assets/zip.mjs';
 import {encodeArchivePath} from '../site/assets/archive-path.mjs';
+import {loadFeatured, matchFeatured, validateFeatured} from '../site/assets/featured.mjs';
 
 const ROOT = new URL('https://reader.example/awesome-shiqu/');
 const GITHUB = {owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', directory: 'works', catalog: 'catalog/catalog.json'};
@@ -253,4 +254,40 @@ test('verified archives yield readable PNG Blob URLs and release them on disposa
     assert.deepEqual(Buffer.from(await blob.arrayBuffer()), PNG);
   } finally { artwork.dispose(); }
   await assert.rejects(fetch(url));
+});
+
+test('catalogue source paths are optional but must point into the works directory', () => {
+  assert.equal(validateCatalog(catalog(entry(false)), {root: ROOT})[0].sourcePath, undefined);
+  assert.equal(validateCatalog(catalog({...entry(false), sourcePath: 'works/alice/tiny.zip'}), {root: ROOT})[0].sourcePath, 'works/alice/tiny.zip');
+  for (const bad of ['stories/alice/tiny.zip', 'works/alice/../tiny.zip', 'works/Alice/tiny.zip', 42]) {
+    assert.throws(() => validateCatalog(catalog({...entry(false), sourcePath: bad}), {root: ROOT}), /来源路径/);
+  }
+});
+
+test('featured lists validate strictly, tolerate a missing file, and only match catalogued paths', async () => {
+  const good = validateFeatured({stories: [{path: 'works/alice/tiny.zip', note: ' 推荐语 '}, {path: 'works/bob/另一篇.zip'}]});
+  assert.deepEqual(good, {stories: [{path: 'works/alice/tiny.zip', note: '推荐语'}, {path: 'works/bob/另一篇.zip', note: ''}]});
+  assert.throws(() => validateFeatured([]), /stories/);
+  assert.throws(() => validateFeatured({stories: [{path: 'stories/x/story.json'}]}), /works/);
+  assert.throws(() => validateFeatured({stories: [{path: 'works/alice/tiny.zip', prompt: 'x'}]}), /只能包含/);
+  assert.throws(() => validateFeatured({stories: [{path: 'works/alice/tiny.zip'}, {path: 'works/alice/tiny.zip'}]}), /重复/);
+  assert.throws(() => validateFeatured({stories: [{path: 'works/alice/tiny.zip', note: 'a'.repeat(201)}]}), /note/);
+  assert.throws(() => validateFeatured({stories: Array.from({length: 51}, (_, i) => ({path: `works/alice/${i}.zip`}))}), /50/);
+
+  const url = new URL('featured.json', ROOT).href;
+  const missing = fakeFetcher(new Map([[url, new Response('Not found', {status: 404})]]));
+  assert.deepEqual(await loadFeatured({root: ROOT, fetcher: missing.fetcher}), {stories: []});
+  assert.equal(missing.calls[0].options.credentials, 'same-origin');
+  const warnings = [], warn = console.warn; console.warn = message => warnings.push(message);
+  try {
+    const broken = fakeFetcher(new Map([[url, new Response('{"stories":[{"path":"../x.zip"}]}', {headers: {'content-type': 'application/json'}})]]));
+    assert.deepEqual(await loadFeatured({root: ROOT, fetcher: broken.fetcher}), {stories: []});
+    assert.equal(warnings.length, 1);
+  } finally { console.warn = warn; }
+  const offline = fakeFetcher(new Map([[url, new TypeError('offline')]]));
+  assert.deepEqual(await loadFeatured({root: ROOT, fetcher: offline.fetcher}), {stories: []});
+  const live = fakeFetcher(new Map([[url, jsonResponse({stories: [{path: 'works/alice/tiny.zip', note: '值得一读'}, {path: 'works/alice/missing.zip'}]})]]));
+  const featured = await loadFeatured({root: ROOT, fetcher: live.fetcher});
+  const stories = [{...entry(false), sourcePath: 'works/alice/tiny.zip'}, {id: 'legacy', title: '旧作品', pageCount: 1}];
+  assert.deepEqual(matchFeatured(featured, stories).map(({story, note}) => [story.id, note]), [['alice--tiny', '值得一读']]);
 });

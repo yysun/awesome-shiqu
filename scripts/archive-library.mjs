@@ -81,7 +81,7 @@ export async function readArchiveLibrary(root, {retainArchive = true, retainCove
 export function archiveCatalogEntry(story) {
   const {pages, sourceText: _sourceText, ...metadata} = story.manifest;
   return {...metadata, pageCount: pages.length, cover: story.coverName, archive: encodeArchivePath(story.relativePath),
-    sha256: story.sha256, archiveBytes: story.archiveBytes};
+    sha256: story.sha256, archiveBytes: story.archiveBytes, sourcePath: story.relativePath};
 }
 
 export function mergeCatalogs(...catalogs) {

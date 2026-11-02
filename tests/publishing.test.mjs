@@ -1,7 +1,8 @@
 // Exercise import and static publication using temporary, non-production story fixtures.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile} from 'node:fs/promises';
+import {mkdtemp, mkdir, readFile, readdir, rm, stat, symlink, writeFile} from 'node:fs/promises';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 import {deflateRawSync} from 'node:zlib';
@@ -164,11 +165,15 @@ test('publishes SEO-friendly book and story pages with canonical URLs and a site
   const bookPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', 'index.html'), 'utf8');
   assert.equal(bookPage.includes('href="./螳螂捕蝉/"'), true);
   assert.equal(bookPage.includes(`src="../../stories/${manifest.id}/images/01.png"`), true);
-  assert.equal(bookPage.includes('href="../">全部书目</a>'), true);
+  assert.equal(bookPage.includes('<a class="nav-link active" href="../../books/" aria-current="page">书目</a>'), true);
+  assert.equal(bookPage.includes('<nav class="breadcrumb" aria-label="位置"><a href="../../">首页</a><a href="../">书目</a><span aria-current="page">说苑·正谏</span></nav>'), true);
+  assert.equal(bookPage.includes(`<a href="../../themes/${encodeURIComponent('聪明与糊涂')}/">`) || bookPage.includes('<a href="../../themes/聪明与糊涂/">'), true);
   const sitemap = await readFile(path.join(root, 'dist', 'sitemap.xml'), 'utf8');
   assert.equal(sitemap.includes(`<loc>${canonical}</loc>`), true);
-  assert.equal(sitemap.includes('<loc>https://yysun.github.io/awesome-shiqu/</loc>'), true);
-  assert.equal(sitemap.includes('<loc>https://yysun.github.io/awesome-shiqu/books/</loc>'), true);
+  for (const relative of ['', 'books/', 'collection/', 'themes/', 'themes/聪明与糊涂/', 'styles/水墨写意/']) {
+    assert.equal(sitemap.includes(`<loc>${new URL(relative, 'https://yysun.github.io/awesome-shiqu/').href}</loc>`), true, relative);
+  }
+  assert.equal(sitemap.includes('/featured/</loc>'), false);
 });
 
 test('publishes a static books overview with grouped counts, escaped titles, and portable links', async t => {
@@ -182,9 +187,10 @@ test('publishes a static books overview with grouped counts, escaped titles, and
   const overview = await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8');
   assert.match(overview, /<title>原著书目 · 拾趣好故事<\/title>/);
   assert.match(overview, /<span class="count">2 部<\/span>/);
-  assert.equal((overview.match(/<article class="story-card">/g) || []).length, 2);
-  assert.match(overview, /<h2 class="card-title">说苑·正谏<\/h2><p class="card-hook">2 篇精选连环画<\/p>/);
-  assert.match(overview, /<h2 class="card-title">三国演义 &lt;script&gt; &amp; &quot;选&quot;<\/h2><p class="card-hook">1 篇精选连环画<\/p>/);
+  assert.equal((overview.match(/<article class="story-card group-card">/g) || []).length, 2);
+  assert.match(overview, /<h2 class="card-title">说苑·正谏<\/h2><p class="card-hook">2 篇精选连环画 · 最近收录 2026-11-01<\/p>/);
+  assert.match(overview, /<h2 class="card-title">三国演义 &lt;script&gt; &amp; &quot;选&quot;<\/h2><p class="card-hook">1 篇精选连环画 · 最近收录 2026-11-01<\/p>/);
+  assert.match(overview, /<span class="cover-label">2 篇<\/span>/);
   assert.equal(overview.includes('<script>'), false);
   assert.ok(overview.indexOf('三国演义 &lt;script&gt;') < overview.indexOf('说苑·正谏'));
   const base = new URL('https://yysun.github.io/awesome-shiqu/books/');
@@ -192,7 +198,10 @@ test('publishes a static books overview with grouped counts, escaped titles, and
   assert.equal(overview.includes(`<meta property="og:url" content="${base.href}">`), true);
   assert.equal(overview.includes('href="../assets/site.css"'), true);
   assert.equal(overview.includes('href="../assets/mark.svg"'), true);
-  assert.equal(overview.includes('href="../#collection"'), true);
+  assert.equal(overview.includes('<a class="nav-link" href="../collection/">全部作品</a>'), true);
+  assert.equal(overview.includes('<form class="masthead-search" role="search" action="../collection/" method="get">'), true);
+  assert.equal(overview.includes('<a href="./#contribute">投稿</a>'), false);
+  assert.equal(overview.includes('<a href="../#contribute">投稿</a>'), true);
   assert.doesNotMatch(overview, /(?:href|src)="\//);
   for (const [, href] of overview.matchAll(/class="card-link" href="([^"]+)"/g)) {
     const url = new URL(href, base);
@@ -263,4 +272,131 @@ test('CLI requires explicit contributor identity and rejects unknown or repeated
   assert.throws(() => argumentsForImport(['sample.zip', '--slug', 'story']), /必填/);
   assert.throws(() => argumentsForImport(['sample.zip', '--slug', 'story', '--author', '作者', '--force', 'true']), /无效/);
   assert.throws(() => argumentsForImport(['sample.zip', '--slug', 'a', '--slug', 'b']), /重复/);
+});
+
+// Every relative link or asset in dist must resolve to a published file at that page's depth.
+async function assertLinksResolve(root, relativeFile, html) {
+  const pageURL = pathToFileURL(path.join(root, 'dist', relativeFile));
+  for (const [, attribute, value] of html.matchAll(/\s(href|src|action)="([^"]+)"/g)) {
+    if (/^(https?:|mailto:|#)/.test(value)) continue;
+    assert.doesNotMatch(value, /^\//, `${relativeFile} 使用了绝对路径 ${attribute}="${value}"`);
+    const target = new URL(value, pageURL);
+    let file = decodeURIComponent(fileURLToPath(target));
+    if (file.endsWith(path.sep) || (await stat(file).then(info => info.isDirectory(), () => false))) file = path.join(file, 'index.html');
+    await stat(file).catch(() => assert.fail(`${relativeFile} 的 ${attribute}="${value}" 指向不存在的 ${path.relative(root, file)}`));
+  }
+}
+async function htmlFiles(directory, prefix = '') {
+  const result = [];
+  for (const entry of await readdir(directory, {withFileTypes: true})) {
+    if (entry.isDirectory()) result.push(...await htmlFiles(path.join(directory, entry.name), prefix + entry.name + '/'));
+    else if (entry.name.endsWith('.html')) result.push(prefix + entry.name);
+  }
+  return result;
+}
+const SITE_INDEX = '<!doctype html><html lang="zh-Hans"><head><meta charset="utf-8"><meta name="description" content="首页描述 &amp; 测试"><title>拾趣好故事 · 精选连环画</title><link rel="stylesheet" href="./assets/site.css"></head><body>'
+  + '<header class="masthead wrap"><a class="brand" href="./">旧品牌</a><nav aria-label="主导航"><a class="nav-link" href="#collection">作品集</a></nav></header>'
+  + '<main><section id="contribute"></section></main><footer class="footer wrap"><a href="./#contribute">投稿</a><a href="./reader.html?preview=1">试读</a></footer></body></html>';
+
+test('publishes category pages and a consistent masthead whose links resolve at every depth', async t => {
+  const root = await workspace(t), input = path.join(root, 'export.zip');
+  await writeFile(path.join(root, 'site', 'index.html'), SITE_INDEX);
+  await mkdir(path.join(root, 'site', 'assets'));
+  for (const name of ['mark.svg', 'site.css', 'shelf.mjs', 'featured-page.mjs']) await writeFile(path.join(root, 'site', 'assets', name), '');
+  await writeFile(input, storyZip());
+  await importStory(input, OPTIONS, root);
+  await writeFile(input, zip([['分镜.md', SOURCE.replace('主题：聪明与糊涂\n\n', '').replace('画风：水墨写意', '画风：<b>剪纸</b>')], ['图片/01.png', PNG], ['图片/02.png', PNG]]));
+  await importStory(input, {...OPTIONS, slug: 'no-theme', book: '三国演义'}, root);
+  const summary = await build(root);
+  assert.equal(summary.themes, 1); assert.equal(summary.styles, 2); assert.equal(summary.featured, 0);
+  const themes = await readFile(path.join(root, 'dist', 'themes', 'index.html'), 'utf8');
+  assert.match(themes, /<title>故事分类 · 拾趣好故事<\/title>/);
+  assert.match(themes, /<h2 id="themes-title">按主题 <span class="count">1 类<\/span><\/h2>/);
+  assert.match(themes, /<h2 id="styles-title">按画风 <span class="count">2 类<\/span><\/h2>/);
+  assert.equal(themes.includes('href="../themes/聪明与糊涂/"'), true);
+  assert.equal(themes.includes('href="../styles/b-剪纸-b/"'), true);
+  assert.equal(themes.includes('&lt;b&gt;剪纸&lt;/b&gt;'), true);
+  assert.equal(themes.includes('<b>剪纸</b>'), false);
+  assert.equal(themes.includes('<a class="nav-link active" href="../themes/" aria-current="page">分类</a>'), true);
+  const theme = await readFile(path.join(root, 'dist', 'themes', '聪明与糊涂', 'index.html'), 'utf8');
+  assert.match(theme, /<h1 id="facet-title">聪明与糊涂 <span class="count">1 篇<\/span><\/h1>/);
+  assert.equal(theme.includes('href="../../books/说苑-正谏/螳螂捕蝉/"'), true);
+  assert.equal(theme.includes('href="../../books/三国演义/'), false, '缺少主题的作品不进入分类页');
+  assert.equal(theme.includes('<span class="cover-label">说苑·正谏</span>'), true);
+  assert.equal(theme.includes('<a class="nav-link active" href="../../themes/" aria-current="page">分类</a>'), true);
+  const style = await readFile(path.join(root, 'dist', 'styles', 'b-剪纸-b', 'index.html'), 'utf8');
+  assert.equal(style.includes('href="../../styles/水墨写意/"'), true, '其他画风入口');
+  const bookPage = await readFile(path.join(root, 'dist', 'books', '三国演义', 'index.html'), 'utf8');
+  assert.equal(bookPage.includes('<span class="chip-kicker">画风</span>&lt;b&gt;剪纸&lt;/b&gt;'), true);
+  assert.equal(bookPage.includes('<span class="chip-kicker">主题</span>'), false);
+  assert.equal(bookPage.includes('href="../说苑-正谏/"'), true, '其他书目入口');
+  const home = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
+  assert.equal(home.includes('旧品牌'), false, '首页 masthead 由构建统一生成');
+  assert.equal(home.includes('<a class="nav-link" href="books/">书目</a>'), true);
+  assert.equal(home.includes('aria-current'), false);
+  assert.equal(home.includes('href="featured/"'), false, '无精选时导航不含精选');
+  assert.equal(home.includes('<link rel="canonical" href="https://yysun.github.io/awesome-shiqu/">'), true);
+  assert.equal(home.includes('<meta property="og:description" content="首页描述 &amp; 测试">'), true);
+  const featured = await readFile(path.join(root, 'dist', 'featured', 'index.html'), 'utf8');
+  assert.equal(featured.includes('aria-current'), false);
+  assert.match(featured, /src="\.\.\/assets\/featured-page\.mjs\?v=[0-9a-f]{10}"/);
+  const collection = await readFile(path.join(root, 'dist', 'collection', 'index.html'), 'utf8');
+  assert.equal(collection.includes('<a class="nav-link active" href="../collection/" aria-current="page">全部作品</a>'), true);
+  assert.equal(collection.includes('id="theme-filter"') && collection.includes('id="style-filter"'), true);
+  const files = await htmlFiles(path.join(root, 'dist'));
+  assert.ok(files.length >= 9, files.join(','));
+  for (const file of files) {
+    const html = await readFile(path.join(root, 'dist', file), 'utf8');
+    const readerPage = file === 'reader.html' || /^books\/[^/]+\/[^/]+\/index\.html$/.test(file);
+    if (readerPage) {
+      assert.equal(html.includes('<nav aria-label="主导航">'), false, file);
+    } else {
+      assert.equal((html.match(/<nav aria-label="主导航">/g) || []).length, 1, file);
+      assert.equal((html.match(/class="nav-link active" href="[^"]+" aria-current="page">/g) || []).length, file === 'index.html' || file === 'featured/index.html' ? 0 : 1, file);
+      assert.equal(html.includes('<footer class="footer wrap">'), true, file);
+      assert.equal(html.includes('#contribute">投稿</a>'), true, file);
+    }
+    await assertLinksResolve(root, file, html);
+  }
+});
+
+test('featured lists must reference catalogued works and switch the featured navigation on', async t => {
+  const root = await workspace(t), input = path.join(root, 'export.zip');
+  await writeFile(input, storyZip());
+  await importStory(input, OPTIONS, root);
+  await mkdir(path.join(root, 'works', 'alice'), {recursive: true});
+  await writeFile(path.join(root, 'works', 'alice', '测试 故事.zip'), storyZip());
+  await writeFile(path.join(root, 'site', 'featured.json'), '{"stories":[{"path":"works/alice/测试 故事.zip","note":"<b>值得</b>一读"}]}');
+  const summary = await build(root);
+  assert.equal(summary.featured, 1);
+  const catalog = JSON.parse(await readFile(path.join(root, 'dist', 'catalog.json'), 'utf8'));
+  assert.equal(catalog.stories.find(story => story.archive).sourcePath, 'works/alice/测试 故事.zip');
+  assert.equal(catalog.stories.find(story => story.url).sourcePath, undefined);
+  assert.deepEqual(JSON.parse(await readFile(path.join(root, 'dist', 'featured.json'), 'utf8')).stories[0].path, 'works/alice/测试 故事.zip');
+  for (const file of ['books/index.html', 'collection/index.html', 'themes/index.html']) {
+    const html = await readFile(path.join(root, 'dist', file), 'utf8');
+    assert.equal(html.includes('<a class="nav-link" href="../featured/">精选</a>'), true, file);
+  }
+  const featured = await readFile(path.join(root, 'dist', 'featured', 'index.html'), 'utf8');
+  assert.equal(featured.includes('<a class="nav-link active" href="../featured/" aria-current="page">精选</a>'), true);
+  const sitemap = await readFile(path.join(root, 'dist', 'sitemap.xml'), 'utf8');
+  assert.equal(sitemap.includes('<loc>https://yysun.github.io/awesome-shiqu/featured/</loc>'), true);
+  const previous = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
+  await writeFile(path.join(root, 'site', 'featured.json'), '{"stories":[{"path":"works/alice/missing.zip"}]}');
+  await assert.rejects(build(root), /未收录的作品：works\/alice\/missing\.zip/);
+  await writeFile(path.join(root, 'site', 'featured.json'), '{"stories":[{"path":"stories/x/story.json"}]}');
+  await assert.rejects(build(root), /works\//);
+  await writeFile(path.join(root, 'site', 'featured.json'), '{"stories":[');
+  await assert.rejects(build(root), /JSON/);
+  assert.equal(await readFile(path.join(root, 'dist', 'index.html'), 'utf8'), previous, '失败的构建保留上一次输出');
+  await rm(path.join(root, 'site', 'featured.json'));
+  assert.equal((await build(root)).featured, 0);
+});
+
+test('distinct titles that share one slug stop the build instead of merging pages', async t => {
+  const root = await workspace(t), input = path.join(root, 'export.zip');
+  await writeFile(input, storyZip());
+  await importStory(input, OPTIONS, root);
+  await importStory(input, {...OPTIONS, slug: 'second', book: '说苑 正谏'}, root);
+  await assert.rejects(build(root), /同一页面地址.*书名 说苑-正谏（说苑 正谏、说苑·正谏）/);
 });

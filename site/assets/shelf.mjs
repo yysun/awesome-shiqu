@@ -1,78 +1,62 @@
-// Render lightweight catalogue cards and navigate to static book pages without downloading story ZIPs.
-import { ROOT, catalog, libraryInfo, storyLink, storyRoute, savedStories, toggleSaved, progressFor, node, bookmarkIcon, toast } from './common.mjs';
+// Collection page: search, combinable book/theme/style filters, sorting, and saved stories from the
+// lightweight catalogue only. ?q= and ?scope=saved deep-link into the same view.
+import {ROOT, catalog, libraryInfo, savedStories, node} from './common.mjs';
+import {compareLatest, facetOf, facetRoutes, groupByBook, storyRoutes} from './story-url.mjs';
+import {storyCard} from './cards.mjs';
 const $ = selector => document.querySelector(selector);
-let stories = [], scope = 'all';
-function card(story, saved) {
-  const article = node('article', 'story-card');
-  const link = node('a', 'card-link'); link.href = storyLink(story.id);
-  const cover = node('div', 'cover-wrap');
-  const image = node('img'); image.src = story.coverURL; image.alt = story.title + '封面'; image.loading = 'lazy'; image.decoding = 'async';
-  image.addEventListener('error', () => { image.alt = '封面暂时无法显示'; }, { once: true });
-  cover.append(image);
-  const book = story.book || story.source?.title || '';
-  if (book) cover.append(node('span', 'cover-label', book));
-  const title = node('h3', 'card-title', story.title), hook = node('p', 'card-hook', story.hook || '翻开这段故事，读到一点余味。');
-  const meta = node('div', 'card-meta'), credit = node('span', 'card-credit', [story.author, story.pageCount + ' 幅'].filter(Boolean).join(' · '));
-  if (story.storyboardModels?.length) credit.append(node('span', 'card-model', `分镜模型：${story.storyboardModels.join(' / ')}`));
-  meta.append(credit);
-  const current = Math.min(story.pageCount - 1, progressFor(story.id)?.page || 0);
-  meta.append(node('span', 'card-action', current > 0 ? `继续第 ${current + 1} 页 →` : '开始阅读 →'));
-  link.append(cover, title, hook, meta);
-  const save = node('button', 'save-button'); save.type = 'button'; save.setAttribute('aria-label', (saved.has(story.id) ? '取消收藏：' : '收藏：') + story.title); save.setAttribute('aria-pressed', String(saved.has(story.id))); save.append(bookmarkIcon());
-  save.addEventListener('click', () => {
-    const result = toggleSaved(story.id);
-    if (!result.stored) { toast('当前浏览器无法保存收藏。'); return; }
-    save.setAttribute('aria-pressed', String(result.saved)); save.setAttribute('aria-label', (result.saved ? '取消收藏：' : '收藏：') + story.title);
-    toast(result.saved ? '已加入我的收藏' : '已取消收藏');
-    if (scope === 'saved') render();
-  });
-  article.append(link, save); return article;
-}
+const params = new URLSearchParams(location.search);
+let stories = [], routes = new Map(), facets = {theme: new Map(), style: new Map()}, scope = 'all';
+const matches = (story, query) => !query || [story.title, story.hook, story.book, story.source?.title, story.theme, story.artStyle, story.author].filter(Boolean).join(' ').toLocaleLowerCase().includes(query);
 function render() {
   const query = $('#search').value.trim().toLocaleLowerCase(), saved = savedStories();
-  const filtered = stories.filter(story => (scope !== 'saved' || saved.has(story.id)) && (!query || [story.title, story.hook, story.book, story.source?.title, story.theme, story.artStyle, story.author].filter(Boolean).join(' ').toLocaleLowerCase().includes(query)));
-  filtered.sort($('#sort').value === 'title' ? (a,b) => a.title.localeCompare(b.title, 'zh-Hans') : (a,b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')) || a.title.localeCompare(b.title, 'zh-Hans'));
-  $('#stories').replaceChildren(...filtered.map(story => card(story, saved)));
+  const book = $('#book-filter').value, theme = $('#theme-filter').value, style = $('#style-filter').value;
+  const filtered = stories.filter(story => (scope !== 'saved' || saved.has(story.id)) && matches(story, query)
+    && (!book || routes.get(story.id)?.bookSlug === book)
+    && (!theme || facetOf(story, 'theme', facets)?.slug === theme)
+    && (!style || facetOf(story, 'style', facets)?.slug === style));
+  filtered.sort($('#sort').value === 'title' ? (a, b) => a.title.localeCompare(b.title, 'zh-Hans') || compareLatest(a, b) : compareLatest);
+  $('#stories').replaceChildren(...filtered.map(story => storyCard(story, {saved, onChange: () => { if (scope === 'saved') render(); }})));
   $('#story-count').textContent = `${filtered.length} 篇`;
   $('#shelf-status').textContent = `共 ${filtered.length} 篇作品`;
   $('#shelf-status').className = 'sr-only';
   $('#empty').hidden = filtered.length > 0;
-  const hasFilters = Boolean(query || scope === 'saved');
+  const hasFilters = Boolean(query || book || theme || style || scope === 'saved');
   $('#clear-filters').hidden = !hasFilters;
   $('#empty-preview').hidden = hasFilters;
-  $('#empty-title').textContent = hasFilters ? (scope === 'saved' && !query ? '把喜欢的故事，留下来。' : '这里还没有找到这篇故事。') : '好故事，正在收集。';
-  $('#empty-description').textContent = hasFilters ? (scope === 'saved' && !query ? '点一下封面上的收藏图标，下次就能在这里找到。' : '换个关键词，或回到全部作品看看。') : '这里将收录经过挑选的拾趣连环画。每一篇，都值得从头读到最后。';
+  const savedOnly = scope === 'saved' && !query && !book && !theme && !style;
+  $('#empty-title').textContent = hasFilters ? (savedOnly ? '把喜欢的故事，留下来。' : '这里还没有找到这篇故事。') : '好故事，正在收集。';
+  $('#empty-description').textContent = hasFilters ? (savedOnly ? '点一下封面上的收藏图标，下次就能在这里找到。' : '换个关键词或筛选条件，或回到全部作品看看。') : '这里将收录经过挑选的拾趣连环画。每一篇，都值得从头读到最后。';
 }
 function setScope(value) {
-  scope = value;
+  scope = value === 'saved' ? 'saved' : 'all';
   document.querySelectorAll('[data-scope]').forEach(button => { button.classList.toggle('active', button.dataset.scope === scope); button.setAttribute('aria-pressed', String(button.dataset.scope === scope)); });
+}
+function fillOptions(select, groups) {
+  for (const group of [...groups.values()].sort((a, b) => a.title.localeCompare(b.title, 'zh-Hans'))) {
+    const option = node('option', '', `${group.title}（${group.stories.length}）`); option.value = group.slug; select.append(option);
+  }
 }
 try {
   stories = await catalog();
   const info = await libraryInfo();
-  if (info.github && (info.source === 'github' || location.hostname.endsWith('.github.io'))) {
-    const repository = `https://github.com/${encodeURIComponent(info.github.owner)}/${encodeURIComponent(info.github.repo)}`;
-    $('#submit-github').href = repository + '/blob/' + encodeURIComponent(info.github.branch) + '/CONTRIBUTING.md';
-    $('#submit-github').hidden = false; $('#submission-pending').hidden = true;
-  }
   if (info.remoteUnavailable && stories.length) {
     $('#catalog-notice').hidden = false;
     $('#catalog-notice').textContent = '当前显示已保存的作品集；最新收录暂时无法同步，请稍后刷新。';
   }
-  const books = new Map();
-  for (const story of stories) {
-    const route = storyRoute(story.id);
-    if (!route) throw Error('原著书目地址无法生成，请刷新作品集重试。');
-    books.set(route.bookPath, route.bookTitle);
+  routes = storyRoutes(stories); facets = facetRoutes(stories);
+  fillOptions($('#book-filter'), groupByBook(stories, routes));
+  fillOptions($('#theme-filter'), facets.theme);
+  fillOptions($('#style-filter'), facets.style);
+  $('#search').value = (params.get('q') || '').slice(0, 120);
+  for (const [id, key] of [['#book-filter', 'book'], ['#theme-filter', 'theme'], ['#style-filter', 'style']]) {
+    const value = params.get(key); if (value && [...$(id).options].some(option => option.value === value)) $(id).value = value;
   }
-  for (const [bookPath, title] of [...books].sort((a,b) => a[1].localeCompare(b[1], 'zh-Hans'))) { const option = node('option', '', title); option.value = bookPath; $('#book-filter').append(option); }
-  $('#book-filter').value = '';
-  $('#book-filter').addEventListener('change', () => location.assign(new URL($('#book-filter').value || './', ROOT).href));
-  for (const id of ['#search', '#sort']) $(id).addEventListener(id === '#search' ? 'input' : 'change', render);
+  setScope(params.get('scope'));
+  for (const id of ['#search', '#book-filter', '#theme-filter', '#style-filter', '#sort']) $(id).addEventListener(id === '#search' ? 'input' : 'change', render);
   document.querySelectorAll('[data-scope]').forEach(button => button.addEventListener('click', () => { setScope(button.dataset.scope); render(); }));
-  $('#clear-filters').addEventListener('click', () => { $('#search').value = ''; $('#book-filter').value = ''; setScope('all'); render(); });
+  $('#clear-filters').addEventListener('click', () => { for (const id of ['#search', '#book-filter', '#theme-filter', '#style-filter']) $(id).value = ''; setScope('all'); render(); });
   window.addEventListener('storage', render);
-  window.addEventListener('pageshow', () => { $('#book-filter').value = ''; render(); });
+  window.addEventListener('pageshow', render);
   render();
 } catch (error) {
   $('#shelf-status').className = 'status error'; $('#shelf-status').textContent = error.message || '作品集暂时无法加载，请稍后重试。';

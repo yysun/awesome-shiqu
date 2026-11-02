@@ -111,6 +111,7 @@ export function validateCatalog(data, {root = ROOT, github = null} = {}) {
     seen.add(story.id);
     const result = {...story, coverURL: assetURL(story.cover, {root, github}).href};
     if (story.storyboardModels !== undefined) result.storyboardModels = validateGenerationModels(story.storyboardModels);
+    if (story.sourcePath !== undefined) check(validArchivePath(story.sourcePath, github?.directory || 'works'), '作品来源路径无效。');
     if (story.archive !== undefined) {
       check(typeof story.sha256 === 'string' && /^[0-9a-f]{64}$/.test(story.sha256) && Number.isSafeInteger(story.archiveBytes) && story.archiveBytes > 0 && story.archiveBytes <= MAX_ZIP_BYTES && typeof story.author === 'string' && story.author.length <= 120 && validDate(story.publishedAt), '作品 ZIP 的目录信息不完整。');
       result.archiveURL = assetURL(story.archive, {root, github, archive: true}).href;
