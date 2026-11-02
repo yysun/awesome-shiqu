@@ -1,0 +1,631 @@
+{
+  "schemaVersion": 1,
+  "stories": [
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "350b1316-7443-43a5-aef4-d233866920cb",
+        "revision": 1,
+        "createdAt": "2026-11-02T00:24:38.896Z",
+        "updatedAt": "2026-11-02T02:05:20.221Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-01978d414d86ad87996f0705",
+      "title": "宝玉上学辞黛玉",
+      "hook": "宝玉将与秦钟一同上学，辞过贾母后，忽想起尚未向黛玉辞行，便赶到她房中。黛玉正在窗下理妆，笑说他此去要“蟾宫折桂”；宝玉叮嘱她等自己下学再吃晚饭、制胭脂，絮叨半日才走。黛玉又叫住他，问为何不向宝姐姐辞行；宝玉笑而不答，径自同秦钟上学去了。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第九回 訓劣子李貴承申飭　嗔頑童茗煙鬧書房》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E5%8D%81%E5%9B%9E&oldid=9685985"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。以辞行会面为完整主事件，压缩此前请安、训诫及仆从交谈，保留黛玉的笑语、宝玉的两项嘱咐、临别追问与笑而不答的收束。对白按原意作现代汉语译写；服色、具体姿态及陈设属于 AI 演绎。用户所引脂批仅作为阅读说明。",
+      "reflection": "把彼此算进寻常小事里，也是一种亲昵。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "storyboardModels": [
+        "gpt-6.1-sol"
+      ],
+      "aiGenerated": true,
+      "pageCount": 7,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/ec8d815530da41f3ad11a3277a1b4c914e4cb409e7427e59ad664a825e18d616.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E7%8E%89%E4%B8%8A%E5%AD%A6%E8%BE%9E%E9%BB%9B%E7%8E%89.zip",
+      "sha256": "ec8d815530da41f3ad11a3277a1b4c914e4cb409e7427e59ad664a825e18d616",
+      "archiveBytes": 1896525,
+      "sourcePath": "works/yysun/宝玉上学辞黛玉.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "ed64a898-6f0a-4c57-8192-131c9d8f7b07",
+        "revision": 2,
+        "createdAt": "2026-11-02T12:01:30.897Z",
+        "updatedAt": "2026-11-02T12:22:57.605Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-0dd8863ccb3bbbe06270694e",
+      "title": "官渡之战",
+      "hook": "袁绍兵多粮足，曹操急于求胜；两军相持之中，粮道与一次次献策，逐渐改变战局。",
+      "book": "三国演义",
+      "theme": "原典故事",
+      "artStyle": "黏土定格",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《三国演义·第三十回 戰官渡本初敗績 劫烏巢孟德燒糧 → 第三十一回 曹操倉亭破本初 玄德荊州依劉表》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E4%B8%89%E5%9C%8B%E6%BC%94%E7%BE%A9%2F%E7%AC%AC030%E5%9B%9E&oldid=2567996"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本版依据补充后的本地原文与完整章节，在已有分镜上补足主事件起因、人物回应和自然收束。保留有效旧镜头、原有人物形象与画风；重复流程及独立支线按原文作用取舍，画幅数由实际叙事需要决定。对白作现代汉语译写，具体外观与服色属于视觉设定。",
+      "reflection": "赏识一个人的才干，并不等于容得下他不肯归附的心志。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 75,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/10225541d5e43cc0071ec071d273d26c3038e0796347354e1140999e463e9949.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%98%E6%B8%A1%E4%B9%8B%E6%88%98.zip",
+      "sha256": "10225541d5e43cc0071ec071d273d26c3038e0796347354e1140999e463e9949",
+      "archiveBytes": 18667025,
+      "sourcePath": "works/yysun/官渡之战.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "40c4a337-1943-4271-a60a-999986eb8e21",
+        "revision": 1,
+        "createdAt": "2026-11-01T22:30:49.535Z",
+        "updatedAt": "2026-11-02T03:44:40.995Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-0f742578c3d0c163baab2355",
+      "title": "宝黛共读西厢",
+      "hook": "宝玉在桃花下读《会真记》，惜花投水；黛玉携花具来，提议葬花，发现他藏书，接过细读入迷。宝玉借戏词比拟二人，黛玉羞恼含泪，欲去告状；他急忙拦住赌誓求饶，逗得她笑着回引戏词。两人收书葬花后，袭人来传话，宝玉辞别黛玉，回房换衣准备请安。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第二十三回 西廂記妙詞通戲語　牡丹亭豔曲警芳心》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%B8%89%E5%8D%81%E5%9B%9E&oldid=2598981"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。依据已核原文编排，保留戏词引出的嗔怒、求饶与互答，以及共同葬花、宝玉被唤走的收束。压缩拾花过程及传话，对白作适量现代汉语译写。人物服色、具体站位和道具外观属于 AI 演绎，不另加人物动机。",
+      "reflection": "戏文里的情话，读来可以会心，落到自己身上，却有了不能轻慢的分量。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "storyboardModels": [
+        "gpt-6.1-sol"
+      ],
+      "aiGenerated": true,
+      "pageCount": 14,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/01f08d508de398188de465d7dd9c90b0509ee77fbce3b9a7632d867665dbb526.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E9%BB%9B%E5%85%B1%E8%AF%BB%E8%A5%BF%E5%8E%A2.zip",
+      "sha256": "01f08d508de398188de465d7dd9c90b0509ee77fbce3b9a7632d867665dbb526",
+      "archiveBytes": 4660277,
+      "sourcePath": "works/yysun/宝黛共读西厢.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "6808e3c3-ce13-492a-84bd-c252ecf15af2",
+        "revision": 2,
+        "createdAt": "2026-11-02T11:59:32.601Z",
+        "updatedAt": "2026-11-02T12:22:20.136Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-24371ad5e8e3670d7addfa3b",
+      "title": "黄忠智取定军山",
+      "hook": "黄忠困在险峻的山口，夏侯渊据山不出；曹操的一道进兵命令，改变了双方的局面。",
+      "book": "三国演义",
+      "theme": "原典故事",
+      "artStyle": "黏土定格",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《三国演义·第七十回 猛張飛智取瓦口隘 老黃忠計奪天蕩山 → 第七十一回 占對山黃忠逸待勞 據漢水趙雲寡勝眾》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E4%B8%89%E5%9C%8B%E6%BC%94%E7%BE%A9%2F%E7%AC%AC070%E5%9B%9E&oldid=2568033"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本版依据补充后的本地原文与完整章节，在已有分镜上补足主事件起因、人物回应和自然收束。保留有效旧镜头、原有人物形象与画风；重复流程及独立支线按原文作用取舍，画幅数由实际叙事需要决定。对白作现代汉语译写，具体外观与服色属于视觉设定。",
+      "reflection": "会为别人设局，也未必能在自己的急切中保持清醒。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 44,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/14d8799addcaff71c83a96a75c5356af67670802ca9c7ed38fb1feb214d2c7b3.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E9%BB%84%E5%BF%A0%E6%99%BA%E5%8F%96%E5%AE%9A%E5%86%9B%E5%B1%B1.zip",
+      "sha256": "14d8799addcaff71c83a96a75c5356af67670802ca9c7ed38fb1feb214d2c7b3",
+      "archiveBytes": 11353209,
+      "sourcePath": "works/yysun/黄忠智取定军山.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "2a196cbd-f662-4cbd-a881-c118349fd4d9",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:31.509Z",
+        "updatedAt": "2026-11-02T08:29:36.666Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-3be1e1a736f7988844dc154d",
+      "title": "元春赐礼与红麝串",
+      "hook": "元春赐端午节礼，宝玉得知自己与宝钗所得相同、与黛玉不同，疑是传错，送礼让黛玉挑选又被谢绝。黛玉以“金玉”讥刺，宝玉发誓表白，她仍说他见姐姐便忘妹妹；宝钗到来，两人走开，宝钗也因同礼而更觉不自在。随后宝玉求看宝钗的红麝串，见她褪串露臂竟看呆，忘了接串；宝钗羞窘，黛玉借“呆雁”打趣，甩帕打中宝玉眼睛。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第二十八回 蔣玉函情贈茜香羅　薛寶釵羞籠紅麝串》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%B8%89%E5%8D%81%E5%9B%9E&oldid=2598981"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "真心有所属，也不等于不会被别人的美打动。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 20,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/44bbcad901baa9857a77db5a135cfe3a4d9b5ee8721c41a3906bdbf7ebbef4e9.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%85%83%E6%98%A5%E8%B5%90%E7%A4%BC%E4%B8%8E%E7%BA%A2%E9%BA%9D%E4%B8%B2.zip",
+      "sha256": "44bbcad901baa9857a77db5a135cfe3a4d9b5ee8721c41a3906bdbf7ebbef4e9",
+      "archiveBytes": 5323325,
+      "sourcePath": "works/yysun/元春赐礼与红麝串.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "2b97a451-3ace-461e-bb16-eb8e54add2cd",
+        "revision": 1,
+        "createdAt": "2026-11-01T22:30:49.539Z",
+        "updatedAt": "2026-11-02T03:27:48.125Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-3bfbddef6ca14f203cfc37b4",
+      "title": "宝钗来后，宝黛小隙",
+      "hook": "黛玉寄居荣府，受贾母疼爱，与宝玉相处亲密。宝钗到来后深得众人喜爱，黛玉心中不忿，宝钗却未察觉；原文另叙宝黛因亲密而易生龃龉，一日二人不知为何言语不和，黛玉独自垂泪。宝玉后悔言语冒撞，前去迁就，黛玉才渐渐回转。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第五回 賈寶玉神遊太虛境　警幻仙曲演紅樓夢》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E5%8D%81%E5%9B%9E&oldid=9685985"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本篇为依据已核原文的 AI 演绎，保留宝钗受人亲近、黛玉不忿，以及宝黛言语不和后逐渐回转的过程。原文未交代争执缘由及具体对白，本稿不补写，也不将争执归因于宝钗。服色、陈设、站位与细微姿态为视觉补足，不延伸本章独立的梦境故事。",
+      "reflection": "亲近不只在言和意顺时，也在肯为自己的冒失低头时。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "storyboardModels": [
+        "gpt-6.1-sol"
+      ],
+      "aiGenerated": true,
+      "pageCount": 8,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/94362cc79862abfc69dcf202f919a77c87fef761d6aa96b003654f2c81e94d98.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E9%92%97%E6%9D%A5%E5%90%8E%EF%BC%8C%E5%AE%9D%E9%BB%9B%E5%B0%8F%E9%9A%99.zip",
+      "sha256": "94362cc79862abfc69dcf202f919a77c87fef761d6aa96b003654f2c81e94d98",
+      "archiveBytes": 1948373,
+      "sourcePath": "works/yysun/宝钗来后，宝黛小隙.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "7230f736-b437-42a9-8dab-d5a2e5ef2b38",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:32.069Z",
+        "updatedAt": "2026-11-02T08:29:36.680Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-5a593658cec5a53a8a60984b",
+      "title": "宝黛拌嘴，湘云打趣",
+      "hook": "宝玉与宝钗玩笑时听人报湘云来了，二人同去相见；黛玉得知他从宝钗处来，出言讥讽，争执后赌气回房，宝玉追劝又被宝钗叫走，留下黛玉临窗流泪。宝玉随后返回，以亲疏和自幼相伴表明不会疏远她，二人互诉心意，黛玉转而关心他脱披风受冷。湘云来寻，黛玉取笑她口齿，湘云便举宝钗反驳，又拿“咬舌儿林姐夫”打趣黛玉，逗得宝玉一笑，随即跑开。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第二十回 王熙鳳正言彈妒意　林黛玉俏語謔嬌音》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%BA%8C%E5%8D%81%E5%9B%9E&oldid=5438620"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "说开了心意，不等于就能放下所有介怀。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 22,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/1d81143a68dac4ff2e3bffd7985087fc095b9ccd6ce966645a7e4c8ecdddbd85.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E9%BB%9B%E6%8B%8C%E5%98%B4%EF%BC%8C%E6%B9%98%E4%BA%91%E6%89%93%E8%B6%A3.zip",
+      "sha256": "1d81143a68dac4ff2e3bffd7985087fc095b9ccd6ce966645a7e4c8ecdddbd85",
+      "archiveBytes": 5790617,
+      "sourcePath": "works/yysun/宝黛拌嘴，湘云打趣.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "3811b2b4-4a3c-4db1-983e-46a73476dad5",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:30.859Z",
+        "updatedAt": "2026-11-02T08:29:36.642Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-74126e9015a5df682b7a9675",
+      "title": "黛玉葬花与宝黛释疑",
+      "hook": "黛玉忧心宝玉，晚间前往探问，却遭晴雯赌气拒门，又听见宝玉、宝钗笑语，误认宝玉有意冷落，含泪离去。次日她避开宝玉，葬花吟诗自伤；宝玉兜着落花来到花冢，闻诗恸哭，随后追上她诉说旧日情分。黛玉终于问起拒门之事，宝玉说明全不知她来过，两人解开误会，重新含笑打趣。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第二十六回 蜂腰橋設言傳心事　瀟湘館春困發幽情 → 第二十八回 蔣玉函情贈茜香羅　薛寶釵羞籠紅麝串》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%B8%89%E5%8D%81%E5%9B%9E&oldid=2598981"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "一场误会尚能说清，人与花终会零落的悲哀，却不是一句剖白能够解开的。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 36,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/941f162937b73efa68408e73fc02a8e02d63e637a737dd4b56c756ffd129829a.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E9%BB%9B%E7%8E%89%E8%91%AC%E8%8A%B1%E4%B8%8E%E5%AE%9D%E9%BB%9B%E9%87%8A%E7%96%91.zip",
+      "sha256": "941f162937b73efa68408e73fc02a8e02d63e637a737dd4b56c756ffd129829a",
+      "archiveBytes": 11178084,
+      "sourcePath": "works/yysun/黛玉葬花与宝黛释疑.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "1be720f8-b763-43af-b4b3-1fa348b2873c",
+        "revision": 1,
+        "createdAt": "2026-11-01T22:30:49.538Z",
+        "updatedAt": "2026-11-02T00:05:23.517Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-78c25559a25a1653737ddd28",
+      "title": "黛玉剪香囊",
+      "hook": "宝玉随贾政游园题额后，小厮借索赏之名，将他外佩的荷包、扇袋等解去。回到贾母处，袭人见他佩物全无，笑说又被小厮拿走了。黛玉听见，以为自己送他的荷包也给了人，生气回房，剪破了宝玉先前托她做、尚未完工的香囊。宝玉赶来不及阻止，便解开衣领，取出系在里面衣襟上的荷包，证明她送的东西仍珍藏着。黛玉明白他的珍重，后悔莽撞，低头不语。宝玉却赌气说她懒得做东西，索性连荷包也奉还，掷入她怀中。黛玉越发气哭，拿起荷包要剪，被宝玉抢住；她摔下剪子，上床背身拭泪，宝玉连声赔不是。贾母得知宝玉在黛玉房里，便让他们一处玩，只叮嘱别拌嘴。黛玉被宝玉缠得起身要走，宝玉笑说她去哪里便跟到哪里，又将荷包戴上。黛玉伸手抢他，笑他既说不要又重新佩戴，终于破涕为笑。宝玉请她另做香囊，她答应与否仍要看自己的高兴，随后两人一同出房，往王夫人处去了。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第十七回 大觀園試才題對額　榮國府歸省慶元宵》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%BA%8C%E5%8D%81%E5%9B%9E&oldid=5438620"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎，仅据所提供的已核原文及完整章节改编。压缩游园题诗和往来传话，保留误会、剪袋、出示荷包、赌气退还、抢护、赔不是及和好出房的完整过程。对白作现代译写；人物衣色、物件纹样、室内陈设与站位为视觉补足，不另定具体朝代及人物岁数。",
+      "reflection": "心意不假，赌气的话也一样伤人。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "storyboardModels": [
+        "gpt-6.1-sol"
+      ],
+      "aiGenerated": true,
+      "pageCount": 16,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/1bc8352a9fe3fe19a94d47fe18a70907e538e5c186f6b291c0626b64c20b5867.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E9%BB%9B%E7%8E%89%E5%89%AA%E9%A6%99%E5%9B%8A.zip",
+      "sha256": "1bc8352a9fe3fe19a94d47fe18a70907e538e5c186f6b291c0626b64c20b5867",
+      "archiveBytes": 4036137,
+      "sourcePath": "works/yysun/黛玉剪香囊.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "abe6e68e-829f-457c-8c42-d5bc89670add",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:31.732Z",
+        "updatedAt": "2026-11-02T08:29:36.670Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-798bfc05d373ee65bcee6726",
+      "title": "药方风波",
+      "hook": "王夫人问黛玉病情，宝玉夸口出资配丸药，宝钗不肯作证，黛玉笑他；凤姐证实薛蟠曾照方寻药，宝玉便向黛玉辩白，惹她抱怨他只追问自己。黛玉独自去吃饭，宝玉留席说“过一会子就好了”，饭后探望却被黛玉用这话回敬，陪笑未果，又因外客相请离开。次日赏赐差异引出金玉话题，宝玉表白心意，黛玉仍追问他为何宝钗不圆谎却问自己；宝钗走来，两人走开，争执未获明确解答。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第二十八回 蔣玉函情贈茜香羅　薛寶釵羞籠紅麝串》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%B8%89%E5%8D%81%E5%9B%9E&oldid=2598981"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "心里的在意，不能替话里的轻忽开脱。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 26,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/63d5834d23092cbd09cd715e09f765f54548eb86cb42d7e1fdde593265f8cd39.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E8%8D%AF%E6%96%B9%E9%A3%8E%E6%B3%A2.zip",
+      "sha256": "63d5834d23092cbd09cd715e09f765f54548eb86cb42d7e1fdde593265f8cd39",
+      "archiveBytes": 7540778,
+      "sourcePath": "works/yysun/药方风波.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "0f6dcc96-8310-4f9d-b3e1-6d6fce6b2b2f",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:31.895Z",
+        "updatedAt": "2026-11-02T08:29:36.675Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-86315570728b089d1328bbed",
+      "title": "宝玉赌气参禅",
+      "hook": "宝钗生日宴上，宝玉听曲赞赏“赤条条，来去无牵挂”；随后湘云说小旦像黛玉，宝玉使眼色劝止，反被湘云误解，又因黛玉听见他私下的解释而受责，两面调停不成。宝玉怏怏回房，面对袭人劝解落泪，借曲意写偈填词，自以为解悟；黛玉前来探看，带走文稿，次日与宝钗、湘云同读，宝钗将稿撕碎并吩咐烧掉。三人随后同访宝玉，黛玉设问续偈，宝钗引禅宗典故相助，宝玉答不出，转念自解，笑称只是一时玩话，四人和好如初。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第二十二回 聽曲文寶玉悟禪機　制燈謎賈政悲讖語》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%B8%89%E5%8D%81%E5%9B%9E&oldid=2598981"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "连“无牵挂”都怕旁人读不懂，那份牵挂便还没有走远。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 26,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/cf30e7f3078c2c208d2d54d47e51bbff3b61cc867c27202dbb6a1200fb42a24c.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E7%8E%89%E8%B5%8C%E6%B0%94%E5%8F%82%E7%A6%85.zip",
+      "sha256": "cf30e7f3078c2c208d2d54d47e51bbff3b61cc867c27202dbb6a1200fb42a24c",
+      "archiveBytes": 6691394,
+      "sourcePath": "works/yysun/宝玉赌气参禅.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "690d116e-7498-4bec-9379-4dace902ee52",
+        "revision": 3,
+        "createdAt": "2026-11-02T13:05:03.768Z",
+        "updatedAt": "2026-11-02T13:34:53.552Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-8b50d8214cba6fd81e27a779",
+      "title": "王允连环计诛董卓",
+      "hook": "董卓专横残虐，王允与府中歌伎貂蝉定下连环计，先许婚吕布，再将她献给董卓，离间二人。凤仪亭事发，董卓掷戟追杀吕布，又拒绝将貂蝉送给他，王允遂说动吕布，共谋以禅位之说诱董卓入朝，将其诛杀。随后李儒被斩，郿坞遭抄，所藏良家子女获释，董氏亲属尽被杀戮，王允设宴称庆。",
+      "book": "三国演义",
+      "theme": "原典故事",
+      "artStyle": "黏土定格",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《三国演义·第八回 王司徒巧使連環計 董太師大鬧鳳儀亭 → 第九回 除暴徒呂布助司徒 犯長安李傕聽賈詡》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E4%B8%89%E5%9C%8B%E6%BC%94%E7%BE%A9%2F%E7%AC%AC008%E5%9B%9E&oldid=5314829"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。依据所给定位原文及完整章节编排，保留貂蝉两面对答、李儒两次弥合关系的尝试、吕布对父子名分的犹疑，以及诛卓后的直接处置；压缩宴饮礼节、歌舞赞诗和途中异兆，文言对白拟译为自然现代汉语。人物配色、非原文明示的面貌及必要站位属于AI演绎；原文“先取了紹蟬”的人名异常不作猜改，不据此补写貂蝉去向。文字分镜已保存；已复用符合场景的旧图，缺图暂留空。",
+      "reflection": "除去一个暴虐之人，不能让不分老幼的杀戮也变得正当。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 63,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/35a963efc609ac0d3a29b1f5bcfe6138113d815ed54cfacf57ea61eca9846ca6.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E7%8E%8B%E5%85%81%E5%B7%A7%E6%96%BD%E8%BF%9E%E7%8E%AF%E8%AE%A1%E8%AF%9B%E8%91%A3%E5%8D%93.zip",
+      "sha256": "35a963efc609ac0d3a29b1f5bcfe6138113d815ed54cfacf57ea61eca9846ca6",
+      "archiveBytes": 13642342,
+      "sourcePath": "works/yysun/王允巧施连环计诛董卓.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "f54db1ba-13d6-4f0e-9b84-d87fe8256e44",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:31.316Z",
+        "updatedAt": "2026-11-02T08:29:36.661Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-924af2043c85ef9705ba30b0",
+      "title": "宝黛诉肺腑：“你放心”",
+      "hook": "宝玉奉命会客，因湘云劝谈仕途经济而反感，直言黛玉从不说这些话；黛玉因担忧金麒麟牵合宝玉与湘云而来探看，听后喜认知己，又悲自身病弱、婚事无人作主，含泪离去。宝玉追上，两人经拭泪、试探与赔不是，他以“你放心”剖白心意，黛玉深受触动，表示都已明白，流泪离开。宝玉仍出神，向送扇的袭人误吐衷情，被推醒后羞赧离去；袭人忧惧，宝钗经过询问时，她借看雀儿打架掩饰失神。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第三十二回 訴肺腑心迷活寶玉　含恥辱情烈死金釧》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%B8%89%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E5%9B%9B%E5%8D%81%E5%9B%9E&oldid=2608677"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "同一份真情，在知己之间是慰藉，在旁人眼里却成了需要防范的祸事。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 24,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/ba74aeb0ed049b7bbf7f179543a0ac7dfa6765e366ae199f2d1c0f5f6ca38ab4.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E9%BB%9B%E8%AF%89%E8%82%BA%E8%85%91%EF%BC%9A%E2%80%9C%E4%BD%A0%E6%94%BE%E5%BF%83%E2%80%9D.zip",
+      "sha256": "ba74aeb0ed049b7bbf7f179543a0ac7dfa6765e366ae199f2d1c0f5f6ca38ab4",
+      "archiveBytes": 6449358,
+      "sourcePath": "works/yysun/宝黛诉肺腑：“你放心”.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "6f25dcc4-bb6f-48b9-9d5b-05938a29a93b",
+        "revision": 9,
+        "createdAt": "2026-11-02T14:26:53.567Z",
+        "updatedAt": "2026-11-02T17:01:06.801Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-973fb8454582ead15810c782",
+      "title": "宝玉探病梨香院",
+      "hook": "宝玉午后想起宝钗养病，绕路避父到梨香院探望，受薛姨妈款待；宝钗赏看通灵玉，莺儿说铭文与项圈成对，引得宝玉央看，宝钗解扣取锁，待他对读后截住莺儿谈和尚的话，转问来处，又因香气谈起冷香丸。黛玉到来，先借来访与取斗篷含酸，留饮时又借手炉奚落宝玉听从宝钗劝温酒，宝玉局促，宝钗不接话；李嬷嬷提父亲查书使宝玉垂头，黛玉维护并反唇，惹得宝钗笑拧她的腮。薛姨妈担责留饭并限制饮酒，饭后宝黛告辞，黛玉替宝玉轻轻戴好斗笠、嘱他披篷，薛姨妈遣人护送二人离去。",
+      "book": "红楼梦",
+      "theme": "原典故事",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第八回 賈寶玉奇緣識金鎖　薛寶釵巧合認通靈》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E5%8D%81%E5%9B%9E&oldid=9685985"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。依据已核原文编为44幅，压缩沿途应酬、问候、反复央求及上菜收酒，略去石头评诗与图式说明，保留识锁、席间对应及临别照料的完整因果。对白拟转为自然现代汉语，保留关键原句与条件；温酒之说保留为宝钗的说法。原文未详写的脸型、配角衣装、佩物系带、站位，以及看毕佩物归还收妥的衔接，均属AI视觉演绎。金锁在解扣取出前完全藏于衣内，衣装与物件状态全篇连续，画内不写文字。",
+      "reflection": "亲近不等于毫无计较，带酸的话也不曾抹去体贴。",
+      "generationModels": [
+        "imagegen (built-in local edit)",
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 44,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/3b6d78f23a6c819fa58a7f3d941ceffc6fa75e77b1b8ff5a769bd42c59278ddf.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E7%8E%89%E6%8E%A2%E7%97%85%E6%A2%A8%E9%A6%99%E9%99%A2.zip",
+      "sha256": "3b6d78f23a6c819fa58a7f3d941ceffc6fa75e77b1b8ff5a769bd42c59278ddf",
+      "archiveBytes": 12522643,
+      "sourcePath": "works/yysun/宝玉探病梨香院.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "5a9c5aa5-ed4f-4976-a3ba-a3904491c68f",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:30.996Z",
+        "updatedAt": "2026-11-02T08:29:36.649Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-a8d171d214244f04a7635bec",
+      "title": "宝黛怄气又言和",
+      "hook": "宝玉、黛玉随贾母到清虚观打醮，张道士提亲被暂缓；宝玉听说湘云也有金麒麟便收起所得麒麟，引来黛玉讥意。回府后黛玉中暑，宝玉探病，两人因提亲及金玉之说互相试探、误解心意，争执升级：宝玉砸玉未碎，黛玉哭吐并剪断玉穗，贾母赶来将二人分开。两人各自后悔，经丫鬟劝解，宝玉主动登门求好，黛玉在流泪中递帕关切，二人重归亲近，最终由凤姐带到贾母面前，满屋笑声收束。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第二十九回 享福人福深還禱福　多情女情重愈斟情 → 第三十回 寶釵借扇機帶雙敲　椿齡畫薔痴及局外》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%BA%8C%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%B8%89%E5%8D%81%E5%9B%9E&oldid=2598981"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "赌咒也未必说得清的真心，有时会从余怒未消时的一点体贴中显露。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 44,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/d69137ae943da86bde05b2ad463bac1cde57985933bfa8f93b8ee9f1c0c9828d.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E9%BB%9B%E6%80%84%E6%B0%94%E5%8F%88%E8%A8%80%E5%92%8C.zip",
+      "sha256": "d69137ae943da86bde05b2ad463bac1cde57985933bfa8f93b8ee9f1c0c9828d",
+      "archiveBytes": 11638255,
+      "sourcePath": "works/yysun/宝黛怄气又言和.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "11da5a7d-bf5f-460e-a53e-e25ca0956ef9",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:31.138Z",
+        "updatedAt": "2026-11-02T08:29:36.656Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-dbd7cb9a7cfcd80b525f87ff",
+      "title": "宝黛话香",
+      "hook": "黛玉午歇，宝玉来探，留下陪她解闷；黛玉替他擦去脸上胭脂，宝玉却被她袖中幽香吸引。黛玉借奇香说到“金玉”“冷暖”相配，引来宝玉搔痒逗闹，随后两人重新躺下说话。宝玉为防她睡去，编耗子偷香芋的故事，将她戏称为“香玉”，惹她起身拧他；宝钗恰来，借宝玉先前作诗忘典取笑他，黛玉笑称一报还一报，谈笑被宝玉房中的吵嚷打断。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第十九回 情切切良宵花解語　意綿綿靜日玉生香》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E5%8D%81%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E4%BA%8C%E5%8D%81%E5%9B%9E&oldid=5438620"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "听懂了一句玩笑，未必就回答了藏在里面的在意。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 29,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/c851bf3f4048ab2a3ac2c53c9c38f86c13d0c0cf443e2052399be84e843f1b9b.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E5%AE%9D%E9%BB%9B%E8%AF%9D%E9%A6%99.zip",
+      "sha256": "c851bf3f4048ab2a3ac2c53c9c38f86c13d0c0cf443e2052399be84e843f1b9b",
+      "archiveBytes": 6617511,
+      "sourcePath": "works/yysun/宝黛话香.zip"
+    },
+    {
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "3b7d43d9-b2e7-474e-9823-81bff9044ea2",
+        "revision": 2,
+        "createdAt": "2026-11-02T04:11:30.696Z",
+        "updatedAt": "2026-11-02T08:29:36.634Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-e7d37df3aa57130b6734800d",
+      "title": "林黛玉初进贾府",
+      "hook": "黛玉丧母后，经父亲劝说，洒泪离家投依外祖母；初入贾府，她处处留心，与贾母相拥悲泣，拜见亲眷，向两位舅舅问安却均未见到，并谨慎适应府中礼数。晚间宝黛初见，彼此觉得眼熟，宝玉问学问名、赠字，继而因黛玉无玉而摔玉，贾母编说黛玉的玉已随母殉葬，哄他重新戴好。贾母安排黛玉住碧纱橱、宝玉住橱外；夜里黛玉仍为摔玉自责落泪，经鸚哥与袭人劝慰后方才安歇。",
+      "book": "红楼梦",
+      "theme": "爱情与错过",
+      "artStyle": "清新卡通",
+      "author": "",
+      "publishedAt": "2026-11-02",
+      "source": {
+        "title": "《红楼梦·第三回 託內兄如海薦西賓　接外孫賈母惜孤女》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E7%B4%85%E6%A8%93%E5%A4%A2%EF%BC%88%E7%A8%8B%E4%B9%99%E6%9C%AC%EF%BC%89%2F%E7%AC%AC%E4%B8%80%E5%9B%9E%20%E8%87%B3%E7%AC%AC%E5%8D%81%E5%9B%9E&oldid=9685985"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。本稿为AI演绎。依已存程乙本定位原文及完整章节重编，先明确关键言行、回应与停顿再分幅；保留原有叙事范围、人物身份、服色与有效画面，新增原文有据的反应及细节。对白以自然现代汉语译写，保留有表现力的原句；内心独白仍明确为人物所想，诗中设想与人物编造故事均不画成现实事件。不新增无据情节或提前收尾。旧幅与新幅映射另存，只有画面任务和物件状态吻合的旧图才复用。",
+      "reflection": "别人的情绪因自己而起，不等于自己就有了过错。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "aiGenerated": true,
+      "pageCount": 53,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/d8a3deab53c12ec8b03e359cf8fb0c497d937912f9e08a33d44abc4400bffcf9.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/be6a7573c9aa95542b1520b9470a11fc8416e2d1/works/yysun/%E6%9E%97%E9%BB%9B%E7%8E%89%E5%88%9D%E8%BF%9B%E8%B4%BE%E5%BA%9C.zip",
+      "sha256": "d8a3deab53c12ec8b03e359cf8fb0c497d937912f9e08a33d44abc4400bffcf9",
+      "archiveBytes": 15049481,
+      "sourcePath": "works/yysun/林黛玉初进贾府.zip"
+    }
+  ],
+  "sourceCommit": "be6a7573c9aa95542b1520b9470a11fc8416e2d1"
+}
