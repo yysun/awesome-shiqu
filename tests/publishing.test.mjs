@@ -167,6 +167,33 @@ test('publishes SEO-friendly book and story pages with canonical URLs and a site
   assert.equal(sitemap.includes('<loc>https://yysun.github.io/awesome-shiqu/</loc>'), true);
 });
 
+test('stamps one cache-busting version on asset references so pages never mix module versions', async t => {
+  const root = await workspace(t), input = path.join(root, 'export.zip');
+  await mkdir(path.join(root, 'site', 'assets'));
+  await writeFile(path.join(root, 'site', 'assets', 'site.css'), 'body{margin:0}\n');
+  await writeFile(path.join(root, 'site', 'assets', 'common.mjs'), 'export const ok = true;\n');
+  await writeFile(path.join(root, 'site', 'assets', 'shelf.mjs'), "import {ok} from './common.mjs';\nconsole.log(ok);\n");
+  await writeFile(path.join(root, 'site', 'index.html'),
+    '<!doctype html><title>书架</title><link rel="stylesheet" href="./assets/site.css"><script type="module" src="./assets/shelf.mjs"></script>');
+  await writeFile(input, storyZip());
+  await importStory(input, OPTIONS, root);
+  await build(root);
+  const shelf = await readFile(path.join(root, 'dist', 'assets', 'shelf.mjs'), 'utf8');
+  const version = shelf.match(/from '\.\/common\.mjs\?v=([0-9a-f]{10})'/)?.[1];
+  assert.ok(version, '模块导入需要带上版本参数');
+  const index = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
+  assert.equal(index.includes(`src="./assets/shelf.mjs?v=${version}"`), true);
+  assert.equal(index.includes(`href="./assets/site.css?v=${version}"`), true);
+  const storyPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', '螳螂捕蝉', 'index.html'), 'utf8');
+  assert.equal(storyPage.includes(`href="../../../assets/site.css?v=${version}"`), true);
+  const bookPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', 'index.html'), 'utf8');
+  assert.equal(bookPage.includes(`href="../../assets/site.css?v=${version}"`), true);
+  await writeFile(path.join(root, 'site', 'assets', 'common.mjs'), 'export const ok = false;\n');
+  await build(root);
+  const changed = await readFile(path.join(root, 'dist', 'assets', 'shelf.mjs'), 'utf8');
+  assert.notEqual(changed.match(/\?v=([0-9a-f]{10})'/)?.[1], version, '资源内容变化后版本号必须变化');
+});
+
 test('empty collections build, and failed builds preserve the previous published output', async t => {
   const root = await workspace(t);
   const empty = await build(root);

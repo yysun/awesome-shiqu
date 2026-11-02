@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {createHash} from 'node:crypto';
 import {copyFile, lstat, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -137,6 +138,43 @@ async function copySite(source, destination, topLevel = true) {
   return bytes;
 }
 
+// GitHub Pages caches assets for ten minutes, so right after a deploy a fresh page script can
+// import a stale cached module and fail on a missing export. Stamp one content-hash version on
+// every asset reference so each page always loads a consistent module graph.
+export async function versionAssets(staging) {
+  const assetsDirectory = path.join(staging, 'assets');
+  let names;
+  try { names = (await readdir(assetsDirectory)).filter(name => /\.(mjs|css)$/.test(name)).sort(); }
+  catch (error) { if (error.code === 'ENOENT') return 0; throw error; }
+  if (names.length === 0) return 0;
+  const hash = createHash('sha256');
+  for (const name of names) hash.update(name).update('\0').update(await readFile(path.join(assetsDirectory, name)));
+  const version = hash.digest('hex').slice(0, 10);
+  let delta = 0;
+  const rewrite = async (file, replace) => {
+    const before = await readFile(file, 'utf8');
+    const after = replace(before);
+    if (after === before) return;
+    delta += Buffer.byteLength(after) - Buffer.byteLength(before);
+    await writeFile(file, after);
+  };
+  for (const name of names) {
+    if (!name.endsWith('.mjs')) continue;
+    await rewrite(path.join(assetsDirectory, name), text => names.reduce((code, dep) =>
+      code.replaceAll(`'./${dep}'`, `'./${dep}?v=${version}'`).replaceAll(`"./${dep}"`, `"./${dep}?v=${version}"`), text));
+  }
+  const stack = [staging];
+  while (stack.length > 0) {
+    for (const entry of await readdir(stack.pop(), {withFileTypes: true})) {
+      const file = path.join(entry.parentPath, entry.name);
+      if (entry.isDirectory()) stack.push(file);
+      else if (entry.name.endsWith('.html')) await rewrite(file, text => names.reduce((html, dep) =>
+        html.replaceAll(`assets/${dep}"`, `assets/${dep}?v=${version}"`), text));
+    }
+  }
+  return delta;
+}
+
 export async function build(root = ROOT) {
   const stories = await readLibrary(root);
   const archives = await readArchiveLibrary(root);
@@ -208,6 +246,8 @@ export async function build(root = ROOT) {
     size += Buffer.byteLength(catalogJson);
     assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB，请先压缩或移除大图。');
     await writeFile(path.join(staging, 'catalog.json'), catalogJson);
+    size += await versionAssets(staging);
+    assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB，请先压缩或移除大图。');
     await writeFile(path.join(staging, '.nojekyll'), '');
     await rm(destination, {recursive: true, force: true});
     await rename(staging, destination);
