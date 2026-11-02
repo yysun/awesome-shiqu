@@ -1,5 +1,5 @@
-// Render lightweight catalogue cards without downloading story ZIPs to obtain model credits.
-import { catalog, libraryInfo, storyLink, savedStories, toggleSaved, progressFor, node, bookmarkIcon, toast } from './common.mjs';
+// Render lightweight catalogue cards and navigate to static book pages without downloading story ZIPs.
+import { ROOT, catalog, libraryInfo, storyLink, storyRoute, savedStories, toggleSaved, progressFor, node, bookmarkIcon, toast } from './common.mjs';
 const $ = selector => document.querySelector(selector);
 let stories = [], scope = 'all';
 function card(story, saved) {
@@ -29,19 +29,19 @@ function card(story, saved) {
   article.append(link, save); return article;
 }
 function render() {
-  const query = $('#search').value.trim().toLocaleLowerCase(), book = $('#book-filter').value, saved = savedStories();
-  const filtered = stories.filter(story => (scope !== 'saved' || saved.has(story.id)) && (!book || (story.book || story.source?.title || '') === book) && (!query || [story.title, story.hook, story.book, story.source?.title, story.theme, story.artStyle, story.author].filter(Boolean).join(' ').toLocaleLowerCase().includes(query)));
+  const query = $('#search').value.trim().toLocaleLowerCase(), saved = savedStories();
+  const filtered = stories.filter(story => (scope !== 'saved' || saved.has(story.id)) && (!query || [story.title, story.hook, story.book, story.source?.title, story.theme, story.artStyle, story.author].filter(Boolean).join(' ').toLocaleLowerCase().includes(query)));
   filtered.sort($('#sort').value === 'title' ? (a,b) => a.title.localeCompare(b.title, 'zh-Hans') : (a,b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')) || a.title.localeCompare(b.title, 'zh-Hans'));
   $('#stories').replaceChildren(...filtered.map(story => card(story, saved)));
   $('#story-count').textContent = `${filtered.length} 篇`;
   $('#shelf-status').textContent = `共 ${filtered.length} 篇作品`;
   $('#shelf-status').className = 'sr-only';
   $('#empty').hidden = filtered.length > 0;
-  const hasFilters = Boolean(query || book || scope === 'saved');
+  const hasFilters = Boolean(query || scope === 'saved');
   $('#clear-filters').hidden = !hasFilters;
   $('#empty-preview').hidden = hasFilters;
-  $('#empty-title').textContent = hasFilters ? (scope === 'saved' && !query && !book ? '把喜欢的故事，留下来。' : '这里还没有找到这篇故事。') : '好故事，正在收集。';
-  $('#empty-description').textContent = hasFilters ? (scope === 'saved' && !query && !book ? '点一下封面上的收藏图标，下次就能在这里找到。' : '换个关键词，或回到全部作品看看。') : '这里将收录经过挑选的拾趣连环画。每一篇，都值得从头读到最后。';
+  $('#empty-title').textContent = hasFilters ? (scope === 'saved' && !query ? '把喜欢的故事，留下来。' : '这里还没有找到这篇故事。') : '好故事，正在收集。';
+  $('#empty-description').textContent = hasFilters ? (scope === 'saved' && !query ? '点一下封面上的收藏图标，下次就能在这里找到。' : '换个关键词，或回到全部作品看看。') : '这里将收录经过挑选的拾趣连环画。每一篇，都值得从头读到最后。';
 }
 function setScope(value) {
   scope = value;
@@ -59,12 +59,20 @@ try {
     $('#catalog-notice').hidden = false;
     $('#catalog-notice').textContent = '当前显示已保存的作品集；最新收录暂时无法同步，请稍后刷新。';
   }
-  for (const title of [...new Set(stories.map(story => story.book || story.source?.title || '').filter(Boolean))].sort((a,b) => a.localeCompare(b, 'zh-Hans'))) { const option = node('option', '', title); option.value = title; $('#book-filter').append(option); }
-  for (const id of ['#search', '#book-filter', '#sort']) $(id).addEventListener(id === '#search' ? 'input' : 'change', render);
+  const books = new Map();
+  for (const story of stories) {
+    const route = storyRoute(story.id);
+    if (!route) throw Error('原著书目地址无法生成，请刷新作品集重试。');
+    books.set(route.bookPath, route.bookTitle);
+  }
+  for (const [bookPath, title] of [...books].sort((a,b) => a[1].localeCompare(b[1], 'zh-Hans'))) { const option = node('option', '', title); option.value = bookPath; $('#book-filter').append(option); }
+  $('#book-filter').value = '';
+  $('#book-filter').addEventListener('change', () => location.assign(new URL($('#book-filter').value || './', ROOT).href));
+  for (const id of ['#search', '#sort']) $(id).addEventListener(id === '#search' ? 'input' : 'change', render);
   document.querySelectorAll('[data-scope]').forEach(button => button.addEventListener('click', () => { setScope(button.dataset.scope); render(); }));
   $('#clear-filters').addEventListener('click', () => { $('#search').value = ''; $('#book-filter').value = ''; setScope('all'); render(); });
   window.addEventListener('storage', render);
-  window.addEventListener('pageshow', render);
+  window.addEventListener('pageshow', () => { $('#book-filter').value = ''; render(); });
   render();
 } catch (error) {
   $('#shelf-status').className = 'status error'; $('#shelf-status').textContent = error.message || '作品集暂时无法加载，请稍后重试。';
