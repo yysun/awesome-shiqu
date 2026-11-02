@@ -140,6 +140,7 @@ test('JSON takes precedence over Markdown and shares public fields with the sync
     const imported = prepareStory(bytes, {slug: 'tang-lang', author: OPTIONS.author, date: OPTIONS.publishedAt});
     assert.deepEqual(parsed.manifest, {...imported.manifest, id: OPTIONS.id});
     assert.equal(parsed.manifest.title, JSON_STORY.title);
+    assert.equal(parsed.manifest.hook, JSON_STORY.hook);
     assert.equal(parsed.manifest.book, JSON_STORY.bookId);
     assert.equal(parsed.manifest.artStyle, JSON_STORY.artStyleLabel);
     assert.equal(parsed.manifest.source.title, JSON_STORY.sourceReference);
@@ -160,6 +161,37 @@ test('JSON takes precedence over Markdown and shares public fields with the sync
   assert.equal(parseStoryJSON(JSON.stringify(withoutModels)).storyboardModels, undefined);
   assert.equal((await parseStoryArchive(storyZip(), OPTIONS)).manifest.generationModels, undefined);
   assert.equal((await parseStoryArchive(storyZip(), OPTIONS)).manifest.storyboardModels, undefined);
+});
+
+test('JSON summary and legacy hook normalize to the existing public hook field', async () => {
+  const {hook, ...base} = JSON_STORY;
+  for (const [fields, expected] of [
+    [{summary: '  新版简介。  '}, '新版简介。'],
+    [{hook}, hook],
+    [{summary: '新版简介。', hook}, '新版简介。'],
+    [{summary: '', hook}, ''],
+    [{summary: '   ', hook}, ''],
+    [{}, ''],
+    [{summary: '字'.repeat(2000)}, '字'.repeat(2000)],
+    [{summary: '<img src=x onerror=alert(1)>'}, '<img src=x onerror=alert(1)>'],
+  ]) {
+    const input = JSON.stringify({...base, ...fields}), bytes = jsonZip(input);
+    const parsed = await parseStoryArchive(bytes, OPTIONS);
+    const imported = prepareStory(bytes, {slug: 'tang-lang', author: OPTIONS.author, date: OPTIONS.publishedAt});
+    for (const story of [parseStoryJSON(input), parsed.manifest, imported.manifest]) {
+      assert.equal(story.hook, expected);
+      assert.equal(Object.hasOwn(story, 'summary'), false);
+    }
+  }
+});
+
+test('invalid JSON summary is rejected instead of silently using legacy hook', async () => {
+  for (const summary of [null, 7, {}, [], '字'.repeat(2001), '无效\0简介']) {
+    const input = JSON.stringify({...JSON_STORY, summary}), bytes = jsonZip(input);
+    assert.throws(() => parseStoryJSON(input), /简介/);
+    await assert.rejects(parseStoryArchive(bytes, OPTIONS), /简介/);
+    assert.throws(() => prepareStory(bytes, {slug: 'tang-lang', author: OPTIONS.author}), /简介/);
+  }
 });
 
 test('storyboard credits use batch models rather than outline, reflection, review, or image models', async () => {

@@ -93,6 +93,7 @@ test('JSON model names survive archive catalogues, legacy import, and static pub
   const root = await workspace(t);
   const data = {
     title: 'JSON 作品', bookId: '测试古书', sourceReference: '《测试古书》', artStyleLabel: '水墨',
+    summary: '新版 JSON 简介。',
     productionPrompt: 'PRIVATE-PRODUCTION-PROMPT', sourceText: 'PRIVATE-SOURCE-TEXT',
     generationModels: [{step: 'plan:0', model: 'text-model'}, {step: 'repair:1:0', model: 'text-model', prompt: 'PRIVATE-NOTES'}, {step: 'image:0', model: 'image-model'}, {step: 'image:1', model: 'image-model'}],
     pages: [{image: '图片/01.png', caption: 'JSON 第一幅。', prompt: 'PRIVATE-IMAGE-PROMPT'}, {image: '图片/02.png', caption: 'JSON 第二幅。'}],
@@ -100,26 +101,33 @@ test('JSON model names survive archive catalogues, legacy import, and static pub
   const bytes = zip([['故事.json', JSON.stringify(data)], ['图片/01.png', PNG], ['图片/02.png', PNG]]);
   const filename = path.join(root, 'works/alice/test-story.zip'); await writeFile(filename, bytes);
   const library = await readArchiveLibrary(root);
+  assert.equal(library[0].manifest.hook, data.summary);
   assert.deepEqual(library[0].manifest.generationModels, ['text-model', 'image-model']);
   assert.deepEqual(library[0].manifest.storyboardModels, ['text-model']);
   const remote = await createRepositoryCatalog(root, {owner: 'yysun', repo: 'awesome-shiqu', commit: 'a'.repeat(40)});
   assert.deepEqual(remote.stories[0].generationModels, ['text-model', 'image-model']);
   assert.deepEqual(remote.stories[0].storyboardModels, ['text-model']);
   assert.equal(remote.stories[0].title, data.title);
+  assert.equal(remote.stories[0].hook, data.summary);
+  assert.equal(Object.hasOwn(remote.stories[0], 'summary'), false);
   assert.equal(JSON.stringify(remote).includes('PRIVATE-'), false);
   assert.equal(JSON.stringify(remote).includes('repair:1:0'), false);
   const imported = await importStory(filename, {slug: 'json-story', author: 'alice', date: '2026-11-01'}, root);
+  assert.equal(imported.hook, data.summary);
   assert.deepEqual(imported.generationModels, ['text-model', 'image-model']);
   assert.deepEqual(imported.storyboardModels, ['text-model']);
   const summary = await build(root);
   assert.equal(summary.count, 2); assert.equal(summary.pages, 4);
   const local = JSON.parse(await readFile(path.join(root, 'dist/catalog.json'), 'utf8'));
   for (const story of local.stories) {
+    assert.equal(story.hook, data.summary);
+    assert.equal(Object.hasOwn(story, 'summary'), false);
     assert.deepEqual(story.generationModels, ['text-model', 'image-model']);
     assert.deepEqual(story.storyboardModels, ['text-model']);
   }
   assert.equal(JSON.stringify(local).includes('PRIVATE-'), false);
   const manifest = JSON.parse(await readFile(path.join(root, 'dist/stories/json-story/story.json'), 'utf8'));
+  assert.equal(manifest.hook, data.summary);
   assert.deepEqual(manifest.generationModels, ['text-model', 'image-model']);
   assert.deepEqual(manifest.storyboardModels, ['text-model']);
   assert.equal(JSON.stringify(manifest).includes('PRIVATE-'), false);

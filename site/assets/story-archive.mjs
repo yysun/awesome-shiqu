@@ -42,6 +42,7 @@ export function parseStoryJSON(input) {
     '故事.json 需要 1–80 幅画面。');
   const sourceTitle = text(data.sourceReference, '出处标题', 1000);
   const url = sourceURL(data.sourceUrl === undefined ? '' : text(data.sourceUrl, '出处链接', 2000, true));
+  const summary = data.summary === undefined ? data.hook : data.summary;
   let models = [], storyboardModels = [];
   if (data.generationModels !== undefined) {
     assert(Array.isArray(data.generationModels) && data.generationModels.length <= 1000, '故事.json 的生成模型必须是数组，最多 1000 条。');
@@ -55,7 +56,7 @@ export function parseStoryJSON(input) {
     storyboardModels = validateGenerationModels(storyboard.map(record => record.model));
   }
   return {
-    title: text(data.title, '标题', 200), hook: text(data.hook === undefined ? '' : data.hook, '简介', 2000, true),
+    title: text(data.title, '标题', 200), hook: text(summary === undefined ? '' : summary, '简介', 2000, true),
     book: text(data.bookId === undefined ? sourceTitle.match(/《([^》]+)》/)?.[1] || sourceTitle : data.bookId, '书名', 1000),
     theme: text(data.theme === undefined ? '' : data.theme, '主题', 1000, true),
     artStyle: text(data.artStyleLabel === undefined ? '' : data.artStyleLabel, '画风', 200, true),
