@@ -58,9 +58,9 @@ PRIVATE-IMAGE-PROMPT-TWO
 `;
 const OPTIONS = {id: 'alice--tang-lang', author: 'alice', publishedAt: '2026-11-01'};
 const JSON_STORY = {
-  id: 'PRIVATE-LOCAL-ID', title: 'JSON 故事', hook: '从结构化数据读故事。', bookId: '说苑', theme: '聪明与糊涂',
+  id: 'public-local-id', title: 'JSON 故事', hook: '从结构化数据读故事。', bookId: '说苑', theme: '聪明与糊涂',
   sourceReference: '《说苑·正谏》', sourceUrl: 'https://example.org/json-source', artStyleLabel: '水墨写意',
-  sourceText: 'PRIVATE-SOURCE-TEXT', productionPrompt: 'PRIVATE-PRODUCTION-PROMPT',
+  sourceText: '保存的公开原文', productionPrompt: 'PRIVATE-PRODUCTION-PROMPT',
   generationModels: [
     {step: 'plan:0', model: ' text-model ', notes: 'PRIVATE-GENERATION-NOTES'},
     {step: 'reflection', model: 'text-model'}, {step: 'image:0', model: 'image-model'}, {step: 'image:1', model: 'image-model'},
@@ -69,7 +69,7 @@ const JSON_STORY = {
     {image: '图片/01.png', caption: '第一幅：## 余味\n<html>只是文本。</html>', prompt: 'PRIVATE-IMAGE-PROMPT'},
     {image: '图片/02.png', caption: '第二幅。', prompt: 'PRIVATE-IMAGE-PROMPT'},
   ],
-  reflection: 'JSON 结语。', adaptationNote: 'JSON 改编说明。', revision: 7, createdAt: 'PRIVATE-CREATION-DATE',
+  reflection: 'JSON 结语。', adaptationNote: 'JSON 改编说明。', revision: 7, createdAt: '2026-11-01T00:00:00.000Z',
 };
 
 function zip(entries, {deflate = false, descriptor = false} = {}) {
@@ -316,7 +316,8 @@ test('story parser rejects incomplete exports and preserves safe source and auth
   await assert.rejects(parseStoryArchive(storyZip(), {...OPTIONS, author: ''}), /署名/);
   await assert.rejects(parseStoryArchive(storyZip(), {...OPTIONS, id: '../story'}), /作品 ID/);
   const parsed = await parseStoryArchive(storyZip(), {...OPTIONS, author: '爱读书的人', book: '说苑', sourceUrl: 'https://example.org/new'});
-  assert.equal(parsed.manifest.author, '爱读书的人');
+  assert.equal(parsed.manifest.author, '');
+  assert.equal(parsed.manifest.contributor, '爱读书的人');
   assert.equal(parsed.manifest.book, '说苑');
   assert.equal(parsed.manifest.source.url, 'https://example.org/new');
   assert.equal(parsed.manifest.aiGenerated, true);

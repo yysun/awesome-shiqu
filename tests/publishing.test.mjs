@@ -60,7 +60,8 @@ test('imports a real-shaped UTF-8 export, publishes only selected fields, and bu
   const manifest = await importStory(input, OPTIONS, root);
   assert.equal(manifest.title, '螳螂捕蝉');
   assert.equal(manifest.book, '说苑·正谏');
-  assert.equal(manifest.author, OPTIONS.author);
+  assert.equal(manifest.author, '');
+  assert.equal(manifest.contributor,OPTIONS.author);
   assert.equal(manifest.pages.length, 2);
   assert.equal(manifest.pages[1].image, 'images/02.png');
   assert.equal(JSON.stringify(manifest).includes('PRIVATE-'), false);
@@ -257,7 +258,7 @@ test('empty collections build, and failed builds preserve the previous published
   assert.equal(await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8'), overview);
 });
 
-test('CLI requires explicit authorship and rejects unknown or repeated parameters', () => {
+test('CLI requires explicit contributor identity and rejects unknown or repeated parameters', () => {
   assert.deepEqual(argumentsForImport(['sample.zip', '--slug', 'story', '--author', '作者']).options, {slug: 'story', author: '作者'});
   assert.throws(() => argumentsForImport(['sample.zip', '--slug', 'story']), /必填/);
   assert.throws(() => argumentsForImport(['sample.zip', '--slug', 'story', '--author', '作者', '--force', 'true']), /无效/);

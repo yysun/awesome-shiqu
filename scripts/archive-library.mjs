@@ -1,3 +1,4 @@
+// Index reviewed ZIPs with byte-preserving covers and distinct creator/contributor credits.
 import {execFile} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {lstat, readdir} from 'node:fs/promises';
@@ -78,7 +79,7 @@ export async function readArchiveLibrary(root, {retainArchive = true, retainCove
 }
 
 export function archiveCatalogEntry(story) {
-  const {pages, ...metadata} = story.manifest;
+  const {pages, sourceText: _sourceText, ...metadata} = story.manifest;
   return {...metadata, pageCount: pages.length, cover: story.coverName, archive: encodeArchivePath(story.relativePath),
     sha256: story.sha256, archiveBytes: story.archiveBytes};
 }

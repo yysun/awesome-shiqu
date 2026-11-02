@@ -1,6 +1,7 @@
 // Render untrusted story prose as text and retain reading progress across grid and scroll layouts.
 import { ROOT, validId, catalog, internalURL, externalURL, storyLink, storyRoute, savedStories, toggleSaved, progressFor, saveProgress, node, toast } from './common.mjs';
-import {loadArchive, loadLocalArchive} from './library.mjs';
+import {loadArchive, loadLocalArchive, loadManifestArtwork} from './library.mjs';
+import {publicationFields,pagePublicFields,publicText,validateAI,publicURL} from './story-publication.mjs';
 import {validateGenerationModels} from './story-archive.mjs';
 const $ = selector => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
@@ -101,6 +102,8 @@ try {
     }
     if (story.schemaVersion !== 1 || story.id !== id || typeof story.title !== 'string' || !Array.isArray(story.pages) || story.pages.length !== entry.pageCount || story.pages.some(page => typeof page.image !== 'string' || typeof page.caption !== 'string')) throw Error('故事内容不完整，请联系作品维护者。');
   }
+  story={...story,...publicationFields(story),author:publicText(story.author??'','制作署名',120),aiGenerated:validateAI(story.aiGenerated),pages:story.pages.map(page=>({...page,...pagePublicFields(page)}))};
+  if(!artwork&&story.pages.some(page=>page.sha256)){artwork=await loadManifestArtwork(story,manifestURL,{onProgress:message=>{$('#reader-status').textContent=message;}});imageURLs=artwork.imageURLs;}
   if (artwork) window.addEventListener('pagehide', event => { if (!event.persisted) artwork.dispose(); });
   document.title = story.title + ' · 拾趣好故事';
   $('meta[name="description"]').content = story.hook || story.title;
@@ -112,10 +115,18 @@ try {
   $('#story-hook').textContent = story.hook || '';
   const models = validateGenerationModels(story.generationModels);
   const modelCredit = models.length ? `模型：${models.join(' / ')}` : '';
-  $('#story-credit').textContent = [story.author, story.artStyle, `${story.pages.length} 幅`, modelCredit].filter(Boolean).join(' · ');
+  $('#story-credit').textContent = [story.author||'未署名', story.artStyle, `${story.pages.length} 幅`, modelCredit].filter(Boolean).join(' · ');
   $('#story-reflection').textContent = story.reflection || '故事有了结尾，留给我们的思考还在继续。';
-  $('#author-detail').textContent = story.author || '未注明';
-  $('#ai-detail').textContent = story.aiGenerated ? '本作品包含 AI 生成的画面或改编文字。原作出处与改编内容分别注明。' : '创作方式请以作者说明为准。';
+  $('#author-detail').textContent = story.author || '未署名';
+  $('#ai-detail').textContent = story.aiDisclosure || (story.aiGenerated===true?'本作品包含 AI 生成的画面或改编文字。原作出处与改编内容分别注明。':story.aiGenerated===false?'提交声明未使用 AI；此声明未经本站独立认证。':'创作方式未注明，AI 参与情况请向制作人核实。');
+  const p=story.publication||{};
+  const optional=(name,value)=>{ $('#'+name+'-detail').textContent=value||'';$('#'+name+'-detail').hidden=!value;$('#'+name+'-label').hidden=!value;};
+  optional('contributor',story.contributor);optional('contact',p.contact);optional('license',p.sourceNote);
+  $('#reuse-detail').textContent=p.reuse||'未提供额外转载授权；请核对来源许可，必要时联系相应权利人。';
+  const workURL=p.workUrl?publicURL(p.workUrl):'';
+  if(workURL){const a=node('a','','查看公开作品');a.href=workURL;a.target='_blank';a.rel='noopener noreferrer';$('#work-detail').replaceChildren(a);}else{$('#work-label').hidden=true;$('#work-detail').hidden=true;}
+  optional('identity',story.exportIdentity?`${story.exportIdentity.storyId} · 版本 ${story.exportIdentity.revision}`:'');
+  $('#original-notes').hidden=!story.sourceText;$('#original-text').textContent=story.sourceText||'';
   $('#model-detail').textContent = models.join(' / ');
   $('#model-detail').hidden = !models.length; $('#model-label').hidden = !models.length;
   $('#adaptation-detail').textContent = story.adaptationNote || '';

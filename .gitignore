@@ -7,3 +7,5 @@ node_modules/
 
 .openai/*
 !.openai/hosting.json
+
+!tests/fixtures/*.zip

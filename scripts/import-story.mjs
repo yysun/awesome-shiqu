@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Import only public story fields and validated images; never overwrite a reviewed story.
+import {createHash} from 'node:crypto';
 import {lstat, mkdir, readFile, rm, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -22,13 +23,14 @@ export function prepareStory(zip, options) {
     const extension = validateImageName(data, page.image);
     const image = `images/${String(index + 1).padStart(digits, '0')}.${extension}`;
     images.push({name: image, bytes: data});
-    return {image, caption: page.caption};
+    assert(!page.sha256||createHash('sha256').update(data).digest('hex')===page.sha256,`第 ${index+1} 幅图片 SHA-256 与声明不符。`);
+    return {...page,image};
   });
   const manifest = validateManifest({
-    schemaVersion: 1, ...parsed, id: validateSlug(options.slug), author: options.author,
+    schemaVersion: 1, ...parsed, id: validateSlug(options.slug), author: parsed.author??'',contributor:options.author,
     publishedAt: options.date || localDate(), book: options.book || parsed.book,
     source: {...parsed.source, ...(options.sourceUrl ? {url: options.sourceUrl} : {})},
-    aiGenerated: true, pages,
+    aiGenerated: parsed.aiGenerated===undefined?true:parsed.aiGenerated, pages,
   });
   return {manifest, images};
 }
@@ -57,7 +59,7 @@ export async function importStory(inputPath, options, root = ROOT) {
 }
 
 function help() {
-  console.log(`导入拾趣导出的“分镜与图片 ZIP”，生成公开阅读内容。\n\n用法：\n  pnpm import:story /路径/作品.zip --slug cu-zhi --author "作者署名"\n\n必填：\n  --slug        小写英文字母、数字及连字符组成的唯一作品 ID\n  --author      作品提交者或制作人的公开署名\n\n可选：\n  --date        YYYY-MM-DD，默认本地日期\n  --source-url  原作出处的 http/https 链接\n  --book        书名，默认从出处提取\n  --help        显示帮助\n\n导入到 stories/<slug>/；已有作品不会被覆盖。\n制作提示词和画面提示词不写入公开作品。导入后请审阅并运行 pnpm build。`);
+  console.log(`导入拾趣导出的“分镜与图片 ZIP”，生成公开阅读内容。\n\n用法：\n  pnpm import:story /路径/作品.zip --slug cu-zhi --author "投稿者署名"\n\n必填：\n  --slug        小写英文字母、数字及连字符组成的唯一作品 ID\n  --author      作品提交者的公开署名；制作署名以 ZIP 内声明为准\n\n可选：\n  --date        YYYY-MM-DD，默认本地日期\n  --source-url  原作出处的 http/https 链接\n  --book        书名，默认从出处提取\n  --help        显示帮助\n\n导入到 stories/<slug>/；已有作品不会被覆盖。\n制作提示词和画面提示词不写入公开作品。导入后请审阅并运行 pnpm build。`);
 }
 
 export function argumentsForImport(args) {

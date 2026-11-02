@@ -2,6 +2,7 @@
 import {parseStoryArchive, validateGenerationModels} from './story-archive.mjs';
 import {sha256Hex} from './sha256.mjs';
 import {ZIP_LIMITS} from './zip.mjs';
+import {pagePublicFields} from './story-publication.mjs';
 import {validArchivePath} from './archive-path.mjs';
 
 export const ROOT = new URL('../', import.meta.url);
@@ -111,7 +112,7 @@ export function validateCatalog(data, {root = ROOT, github = null} = {}) {
     const result = {...story, coverURL: assetURL(story.cover, {root, github}).href};
     if (story.storyboardModels !== undefined) result.storyboardModels = validateGenerationModels(story.storyboardModels);
     if (story.archive !== undefined) {
-      check(typeof story.sha256 === 'string' && /^[0-9a-f]{64}$/.test(story.sha256) && Number.isSafeInteger(story.archiveBytes) && story.archiveBytes > 0 && story.archiveBytes <= MAX_ZIP_BYTES && typeof story.author === 'string' && story.author.trim() && story.author.length <= 120 && validDate(story.publishedAt), '作品 ZIP 的目录信息不完整。');
+      check(typeof story.sha256 === 'string' && /^[0-9a-f]{64}$/.test(story.sha256) && Number.isSafeInteger(story.archiveBytes) && story.archiveBytes > 0 && story.archiveBytes <= MAX_ZIP_BYTES && typeof story.author === 'string' && story.author.length <= 120 && validDate(story.publishedAt), '作品 ZIP 的目录信息不完整。');
       result.archiveURL = assetURL(story.archive, {root, github, archive: true}).href;
     } else {
       const url = assetURL(story.url, {root});
@@ -161,12 +162,44 @@ export async function loadArchive(entry, {fetcher = fetch, onProgress = () => {}
   check(bytes.length === entry.archiveBytes, '作品 ZIP 大小与收录记录不符，请刷新作品集重试。');
   const digest = await sha256Hex(bytes);
   check(digest === entry.sha256, '作品 ZIP 与收录版本不符，请刷新作品集重试。');
-  const prepared = await parseStoryArchive(bytes, {id: entry.id, author: entry.author, publishedAt: entry.publishedAt});
+  const prepared = await parseStoryArchive(bytes, {id: entry.id, author: entry.contributor||entry.author||'未注明投稿者', publishedAt: entry.publishedAt});
   check(prepared.manifest.pages.length === entry.pageCount, '故事页数与收录记录不符。');
   return createArtwork(prepared);
+}
+// Hash-bearing standalone works are verified before display, then use the exact checked bytes.
+// Hashless pages keep their original confined URL; all newly allocated URLs have one disposal path.
+export async function loadManifestArtwork(story,manifestURL,{fetcher=fetch,onProgress=()=>{}}={}){
+  check(Array.isArray(story.pages)&&story.pages.length>=1&&story.pages.length<=ZIP_LIMITS.pages,'故事页数无效。');
+  const seen=new Set();
+  for(const page of story.pages){
+    check(typeof page.image==='string'&&/^images\/[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g|webp)$/.test(page.image),'画面文件路径无效。');
+    const key=page.image.toLowerCase();check(!seen.has(key),'作品清单含有重复图片路径。');seen.add(key);
+  }
+  const root=new URL('./',manifestURL),imageURLs=new Map(),allocated=[];let total=0;
+  const dispose=()=>{for(const url of allocated.splice(0))URL.revokeObjectURL(url);};
+  try{
+    for(const [index,page] of story.pages.entries()){
+      const metadata=pagePublicFields(page),url=assetURL(page.image,{root});
+      check(!url.search&&/\.(png|jpe?g|webp)$/i.test(url.pathname),'画面文件路径无效。');
+      if(!metadata.sha256){imageURLs.set(page.image,url.href);continue;}
+      onProgress(`正在核对第 ${index+1} / ${story.pages.length} 幅图片…`);
+      check(total<MAX_ZIP_BYTES,'已校验图片合计超过 100 MiB。');
+      const response=await fetcher(url,{credentials:'same-origin',redirect:'error',signal:AbortSignal.timeout(30000)});
+      check(response.ok,`第 ${index+1} 幅图片暂时无法读取。`);
+      const bytes=await responseBytes(response,Math.min(ZIP_LIMITS.imageBytes,MAX_ZIP_BYTES-total));
+      check(bytes.length>0,'图片为空。');total+=bytes.length;
+      check(await sha256Hex(bytes)===metadata.sha256,`第 ${index+1} 幅图片 SHA-256 与声明不符。`);
+      const extension=url.pathname.match(/\.([a-z]+)$/i)[1].toLowerCase(),type=extension==='jpg'||extension==='jpeg'?'image/jpeg':`image/${extension}`;
+      const objectURL=URL.createObjectURL(new Blob([bytes],{type}));allocated.push(objectURL);imageURLs.set(page.image,objectURL);
+    }
+    return {story,imageURLs,dispose};
+  }catch(error){dispose();throw error;}
 }
 export async function loadLocalArchive(file) {
   check(file && /\.zip$/i.test(file.name) && file.size > 0 && file.size <= MAX_ZIP_BYTES, `请选择不超过 ${MAX_ZIP_BYTES / 1024 / 1024} MiB 的拾趣 ZIP 文件。`);
   const bytes = new Uint8Array(await file.arrayBuffer());
-  return createArtwork(await parseStoryArchive(bytes, {id: 'preview--story', author: '本地试读', publishedAt: new Date().toISOString().slice(0, 10)}));
+  const prepared=await parseStoryArchive(bytes, {id: 'preview--story', author: '本地试读', publishedAt: new Date().toISOString().slice(0, 10)});
+  // Opening a local file is not a submission and supplies no contributor identity.
+  delete prepared.manifest.contributor;
+  return createArtwork(prepared);
 }

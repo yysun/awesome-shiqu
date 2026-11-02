@@ -1,4 +1,6 @@
 // Parse public story fields from Shiqu exports without publishing prompts or generation history.
+import {publicationFields,pagePublicFields,publicText,validateAI} from './story-publication.mjs';
+import {sha256Hex} from './sha256.mjs';
 import {readZip, ZIP_LIMITS, safeArchivePath} from './zip.mjs';
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
@@ -43,6 +45,9 @@ export function parseStoryJSON(input) {
   const sourceTitle = text(data.sourceReference, '出处标题', 1000);
   const url = sourceURL(data.sourceUrl === undefined ? '' : text(data.sourceUrl, '出处链接', 2000, true));
   const summary = data.summary === undefined ? data.hook : data.summary;
+  const publicFields=publicationFields({...data,...(data.id!==undefined&&data.revision!==undefined?{exportIdentity:{storyId:data.id,revision:data.revision,...(data.createdAt===undefined?{}:{createdAt:data.createdAt}),...(data.updatedAt===undefined?{}:{updatedAt:data.updatedAt})}}:{})});
+  const author=data.author===undefined?publicFields.publication?.author??'':publicText(data.author,'制作署名',120);
+  assert(!publicFields.publication||publicFields.publication.author===author,'公开制作署名不一致。');
   let models = [], storyboardModels = [];
   if (data.generationModels !== undefined) {
     assert(Array.isArray(data.generationModels) && data.generationModels.length <= 1000, '故事.json 的生成模型必须是数组，最多 1000 条。');
@@ -56,10 +61,11 @@ export function parseStoryJSON(input) {
     storyboardModels = validateGenerationModels(storyboard.map(record => record.model));
   }
   return {
+    ...publicFields,author,...(data.aiGenerated===undefined?{}:{aiGenerated:validateAI(data.aiGenerated)}),
     title: text(data.title, '标题', 200), hook: text(summary === undefined ? '' : summary, '简介', 2000, true),
     book: text(data.bookId === undefined ? sourceTitle.match(/《([^》]+)》/)?.[1] || sourceTitle : data.bookId, '书名', 1000),
     theme: text(data.theme === undefined ? '' : data.theme, '主题', 1000, true),
-    artStyle: text(data.artStyleLabel === undefined ? '' : data.artStyleLabel, '画风', 200, true),
+    artStyle: text(data.artStyleLabel ?? '', '画风', 200, true),
     source: {title: sourceTitle, ...(url ? {url} : {})},
     reflection: text(data.reflection === undefined ? '' : data.reflection, '结语', 3000, true),
     adaptationNote: text(data.adaptationNote === undefined ? '' : data.adaptationNote, '改编说明', 6000, true),
@@ -67,7 +73,7 @@ export function parseStoryJSON(input) {
     ...(storyboardModels.length ? {storyboardModels} : {}),
     pages: data.pages.map((page, index) => {
       assert(page && typeof page === 'object' && !Array.isArray(page), `第 ${index + 1} 幅必须是对象。`);
-      return {image: safeArchivePath(page.image), caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000)};
+      return {...pagePublicFields(page),image: safeArchivePath(page.image), caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000)};
     }),
   };
 }
@@ -163,29 +169,32 @@ function imageFormat(bytes, name) {
 }
 
 export async function parseStoryArchive(bytes, options = {}) {
-  // Validate caller-owned identity before allocating or decompressing content.
-  const id = validateStoryId(options.id), author = text(options.author, '署名', 120), publishedAt = date(options.publishedAt);
+  // Legacy options.author names the contributor, never inferred creator credit; validate before allocation.
+  const id = validateStoryId(options.id), contributor = text(options.author, '投稿者署名', 120), publishedAt = date(options.publishedAt);
   const files = await readZip(bytes), parsed = parseStoryFiles(files), images = [], used = new Set();
-  const pages = parsed.pages.map((page, index) => {
+  const pages = [];
+  for(const [index,page] of parsed.pages.entries()){
     const key = page.image.normalize('NFC').toLowerCase();
     assert(!used.has(key), '分镜中重复引用了同一张图片。'); used.add(key);
     const data = files.get(page.image);
     assert(data, `ZIP 缺少第 ${index + 1} 幅图片：${page.image}`);
     const {format, mime} = imageFormat(data, page.image);
+    assert(!page.sha256||await sha256Hex(data)===page.sha256,`第 ${index+1} 幅图片 SHA-256 与声明不符。`);
     const image = `images/${String(index + 1).padStart(2, '0')}.${format}`;
     images.push({name: image, bytes: data, mime});
-    return {image, caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000)};
-  });
+    pages.push({...pagePublicFields(page),image, caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000)});
+  }
   const url = sourceURL(options.sourceUrl || parsed.source.url);
   const manifest = {
+    ...publicationFields(parsed),contributor,
     schemaVersion: 1, id, title: text(parsed.title, '标题', 200), hook: text(parsed.hook, '简介', 2000, true),
     book: text(options.book || parsed.book, '书名', 1000), theme: text(parsed.theme, '主题', 1000, true),
-    artStyle: text(parsed.artStyle, '画风', 200, true), author, publishedAt,
+    artStyle: text(parsed.artStyle, '画风', 200, true), author:parsed.author??'', publishedAt,
     source: {title: text(parsed.source.title, '出处标题', 1000), ...(url ? {url} : {})},
     adaptationNote: text(parsed.adaptationNote, '改编说明', 6000, true), reflection: text(parsed.reflection, '结语', 3000, true),
     ...(parsed.generationModels ? {generationModels: parsed.generationModels} : {}),
     ...(parsed.storyboardModels ? {storyboardModels: parsed.storyboardModels} : {}),
-    aiGenerated: true, pages,
+    aiGenerated: parsed.aiGenerated===undefined?true:parsed.aiGenerated, pages,
   };
   return {manifest, images};
 }

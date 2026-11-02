@@ -1,4 +1,6 @@
 // Validate allowlisted public manifests and confine all published files to the story directory.
+import {createHash} from 'node:crypto';
+import {publicationFields,pagePublicFields,validateAI} from '../site/assets/story-publication.mjs';
 import {lstat, readFile, readdir, realpath} from 'node:fs/promises';
 import path from 'node:path';
 import {validateGenerationModels} from '../site/assets/story-archive.mjs';
@@ -66,7 +68,7 @@ function onlyKeys(value, permitted, name) {
 
 export function validateManifest(input, expectedId = input?.id) {
   onlyKeys(input, ['schemaVersion', 'id', 'title', 'hook', 'book', 'theme', 'artStyle', 'author',
-    'publishedAt', 'source', 'adaptationNote', 'reflection', 'generationModels', 'storyboardModels', 'aiGenerated', 'pages'], '作品清单');
+    'publishedAt', 'source', 'adaptationNote', 'reflection', 'generationModels', 'storyboardModels', 'aiGenerated', 'pages', 'publication','contributor','sourceText','exportIdentity','aiDisclosure'], '作品清单');
   assert(input.schemaVersion === 1, '作品清单 schemaVersion 必须为 1。');
   const id = validateSlug(input.id);
   assert(id === expectedId, '作品清单 id 必须与文件夹名称相同。');
@@ -74,27 +76,28 @@ export function validateManifest(input, expectedId = input?.id) {
   const sourceTitle = text(input.source.title, '出处标题', 1000);
   assert(input.source.url === undefined || typeof input.source.url === 'string', '出处链接必须是字符串。');
   const sourceUrl = validateSourceUrl(input.source.url ?? '');
-  assert(typeof input.aiGenerated === 'boolean', '作品清单必须明确声明 aiGenerated。');
+  validateAI(input.aiGenerated);
   assert(Array.isArray(input.pages) && input.pages.length >= 1 && input.pages.length <= LIMITS.pages,
     `每篇作品需要 1–${LIMITS.pages} 幅画面。`);
   const paths = new Set();
   const pages = input.pages.map((page, index) => {
-    onlyKeys(page, ['image', 'caption'], `第 ${index + 1} 幅`);
+    onlyKeys(page, ['image', 'caption','sha256','originalSha256','imagePayloadSha256','watermark'], `第 ${index + 1} 幅`);
     assert(typeof page.image === 'string' && /^images\/[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g|webp)$/.test(page.image),
       `第 ${index + 1} 幅图片必须位于本作品 images/ 下，使用 PNG、JPEG 或 WebP。`);
     const key = page.image.toLowerCase();
     assert(!paths.has(key), '作品清单含有重复图片路径。');
     paths.add(key);
-    return {image: page.image, caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000)};
+    return {...pagePublicFields(page),image: page.image, caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000)};
   });
   return {
+    ...publicationFields(input),
     schemaVersion: 1, id,
     title: text(input.title, '标题', 200),
     hook: text(input.hook ?? '', '简介', 2000, true),
     book: text(input.book, '书名', 1000),
     theme: text(input.theme ?? '', '主题', 1000, true),
     artStyle: text(input.artStyle ?? '', '画风', 200, true),
-    author: text(input.author, '署名', 120),
+    author: text(input.author, '署名', 120,true),
     publishedAt: validateDate(input.publishedAt),
     source: {title: sourceTitle, ...(sourceUrl ? {url: sourceUrl} : {})},
     adaptationNote: text(input.adaptationNote ?? '', '改编说明', 6000, true),
@@ -183,6 +186,7 @@ export async function readLibrary(root, {retainImages = true} = {}) {
         assert(totalBytes <= LIMITS.siteBytes, '作品图片总量超过 950 MiB，请先压缩或移除大图。');
         bytes = await regularFile(path.join(directory, page.image), directory, LIMITS.imageBytes);
         validateImageName(bytes, page.image);
+        assert(!page.sha256||createHash('sha256').update(bytes).digest('hex')===page.sha256,'图片 SHA-256 与声明不符。');
       } catch (error) { throw new Error(`${entry.name}/${page.image}：${error.message}`); }
       if (retainImages) images.push({name: page.image, bytes});
     }
@@ -195,7 +199,7 @@ export function makeCatalog(stories) {
   return {
     schemaVersion: 1,
     stories: stories.map(({manifest}) => {
-      const {pages, ...metadata} = manifest;
+      const {pages, sourceText: _sourceText, ...metadata} = manifest;
       return {...metadata, pageCount: pages.length, cover: `stories/${manifest.id}/${pages[0].image}`,
         url: `stories/${manifest.id}/story.json`};
     }),

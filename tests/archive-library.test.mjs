@@ -53,7 +53,8 @@ test('a ZIP-only contribution builds an indexed cover and the unchanged original
   const root = await workspace(t), library = await readArchiveLibrary(root);
   assert.equal(library.length, 1);
   assert.equal(library[0].manifest.id, 'alice--test-story');
-  assert.equal(library[0].manifest.author, 'alice');
+  assert.equal(library[0].manifest.author, '');
+  assert.equal(library[0].manifest.contributor,'alice');
   assert.equal(library[0].manifest.title, '测试故事');
   assert.equal(library[0].manifest.pages.length, 2);
   assert.equal(JSON.stringify(library[0].manifest).includes('PRIVATE-'), false);
@@ -95,7 +96,7 @@ test('JSON model names survive archive catalogues, legacy import, and static pub
   const data = {
     title: 'JSON 作品', bookId: '测试古书', sourceReference: '《测试古书》', artStyleLabel: '水墨',
     summary: '新版 JSON 简介。',
-    productionPrompt: 'PRIVATE-PRODUCTION-PROMPT', sourceText: 'PRIVATE-SOURCE-TEXT',
+    productionPrompt: 'PRIVATE-PRODUCTION-PROMPT', sourceText: '保存的公开原文',
     generationModels: [{step: 'plan:0', model: 'text-model'}, {step: 'repair:1:0', model: 'text-model', prompt: 'PRIVATE-NOTES'}, {step: 'image:0', model: 'image-model'}, {step: 'image:1', model: 'image-model'}],
     pages: [{image: '图片/01.png', caption: 'JSON 第一幅。', prompt: 'PRIVATE-IMAGE-PROMPT'}, {image: '图片/02.png', caption: 'JSON 第二幅。'}],
   };
