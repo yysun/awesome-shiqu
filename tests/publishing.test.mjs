@@ -1,3 +1,4 @@
+// Exercise import and static publication using temporary, non-production story fixtures.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile} from 'node:fs/promises';
@@ -162,9 +163,52 @@ test('publishes SEO-friendly book and story pages with canonical URLs and a site
   const bookPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', 'index.html'), 'utf8');
   assert.equal(bookPage.includes('href="./螳螂捕蝉/"'), true);
   assert.equal(bookPage.includes(`src="../../stories/${manifest.id}/images/01.png"`), true);
+  assert.equal(bookPage.includes('href="../">全部书目</a>'), true);
   const sitemap = await readFile(path.join(root, 'dist', 'sitemap.xml'), 'utf8');
   assert.equal(sitemap.includes(`<loc>${canonical}</loc>`), true);
   assert.equal(sitemap.includes('<loc>https://yysun.github.io/awesome-shiqu/</loc>'), true);
+  assert.equal(sitemap.includes('<loc>https://yysun.github.io/awesome-shiqu/books/</loc>'), true);
+});
+
+test('publishes a static books overview with grouped counts, escaped titles, and portable links', async t => {
+  const root = await workspace(t), input = path.join(root, 'export.zip');
+  await writeFile(input, storyZip());
+  await importStory(input, OPTIONS, root);
+  await importStory(input, {...OPTIONS, slug: 'second-story'}, root);
+  await importStory(input, {...OPTIONS, slug: 'third-story', book: '三国演义 <script> & "选"'}, root);
+  const summary = await build(root);
+  assert.equal(summary.books, 2);
+  const overview = await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8');
+  assert.match(overview, /<title>原著书目 · 拾趣好故事<\/title>/);
+  assert.match(overview, /<span class="count">2 部<\/span>/);
+  assert.equal((overview.match(/<article class="story-card">/g) || []).length, 2);
+  assert.match(overview, /<h2 class="card-title">说苑·正谏<\/h2><p class="card-hook">2 篇精选连环画<\/p>/);
+  assert.match(overview, /<h2 class="card-title">三国演义 &lt;script&gt; &amp; &quot;选&quot;<\/h2><p class="card-hook">1 篇精选连环画<\/p>/);
+  assert.equal(overview.includes('<script>'), false);
+  assert.ok(overview.indexOf('三国演义 &lt;script&gt;') < overview.indexOf('说苑·正谏'));
+  const base = new URL('https://yysun.github.io/awesome-shiqu/books/');
+  assert.equal(overview.includes(`<link rel="canonical" href="${base.href}">`), true);
+  assert.equal(overview.includes(`<meta property="og:url" content="${base.href}">`), true);
+  assert.equal(overview.includes('href="../assets/site.css"'), true);
+  assert.equal(overview.includes('href="../assets/mark.svg"'), true);
+  assert.equal(overview.includes('href="../#collection"'), true);
+  assert.doesNotMatch(overview, /(?:href|src)="\//);
+  for (const [, href] of overview.matchAll(/class="card-link" href="([^"]+)"/g)) {
+    const url = new URL(href, base);
+    assert.ok(url.pathname.startsWith('/awesome-shiqu/books/'));
+    const relative = decodeURIComponent(url.pathname.slice('/awesome-shiqu/'.length));
+    await readFile(path.join(root, 'dist', relative, 'index.html'));
+  }
+});
+
+test('publishes the books overview without requiring GitHub configuration', async t => {
+  const root = await workspace(t);
+  await rm(path.join(root, 'site', 'config.json'));
+  await build(root);
+  const overview = await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8');
+  assert.match(overview, /<title>原著书目 · 拾趣好故事<\/title>/);
+  assert.equal(overview.includes('rel="canonical"'), false);
+  assert.equal(overview.includes('property="og:url"'), false);
 });
 
 test('stamps one cache-busting version on asset references so pages never mix module versions', async t => {
@@ -188,6 +232,8 @@ test('stamps one cache-busting version on asset references so pages never mix mo
   assert.equal(storyPage.includes(`href="../../../assets/site.css?v=${version}"`), true);
   const bookPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', 'index.html'), 'utf8');
   assert.equal(bookPage.includes(`href="../../assets/site.css?v=${version}"`), true);
+  const overview = await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8');
+  assert.equal(overview.includes(`href="../assets/site.css?v=${version}"`), true);
   await writeFile(path.join(root, 'site', 'assets', 'common.mjs'), 'export const ok = false;\n');
   await build(root);
   const changed = await readFile(path.join(root, 'dist', 'assets', 'shelf.mjs'), 'utf8');
@@ -199,11 +245,16 @@ test('empty collections build, and failed builds preserve the previous published
   const empty = await build(root);
   assert.equal(empty.count, 0);
   assert.deepEqual(JSON.parse(await readFile(path.join(root, 'dist', 'catalog.json'), 'utf8')), {schemaVersion: 1, stories: []});
+  const overview = await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8');
+  assert.match(overview, /<span class="count">0 部<\/span>/);
+  assert.match(overview, /好故事，正在收集。/);
+  assert.equal(overview.includes('class="story-card"'), false);
   const input = path.join(root, 'export.zip'); await writeFile(input, storyZip());
   const manifest = await importStory(input, OPTIONS, root);
   await rm(path.join(root, 'stories', manifest.id, 'images', '02.png'));
   await assert.rejects(build(root), /02.png/);
   assert.equal(JSON.parse(await readFile(path.join(root, 'dist', 'catalog.json'), 'utf8')).stories.length, 0);
+  assert.equal(await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8'), overview);
 });
 
 test('CLI requires explicit authorship and rejects unknown or repeated parameters', () => {

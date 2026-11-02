@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Publish reviewed stories and portable static book pages without exposing private metadata.
 import {createHash} from 'node:crypto';
 import {copyFile, lstat, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -88,7 +89,7 @@ ${head}
   <link rel="stylesheet" href="../../assets/site.css">
 </head>
 <body>
-  <header class="masthead wrap"><a class="brand" href="../../" aria-label="拾趣好故事首页"><span class="seal" aria-hidden="true">拾</span><span>拾趣<span class="brand-small">好故事</span></span></a><nav aria-label="主导航"><a class="nav-link" href="../../#collection">作品集</a></nav></header>
+  <header class="masthead wrap"><a class="brand" href="../../" aria-label="拾趣好故事首页"><span class="seal" aria-hidden="true">拾</span><span>拾趣<span class="brand-small">好故事</span></span></a><nav aria-label="主导航"><a class="nav-link" href="../../#collection">作品集</a><a class="nav-link" href="../">全部书目</a></nav></header>
   <main>
     <section class="collection wrap" aria-labelledby="book-title">
       <div class="section-heading"><div><p class="eyebrow">THE BOOK</p><h1 id="book-title">${escapeHTML(book.title)} <span class="count">${book.entries.length} 篇</span></h1></div></div>
@@ -104,7 +105,10 @@ ${head}
 }
 
 export function sitemapXML(base, books) {
-  const urls = [`  <url><loc>${escapeHTML(base.href)}</loc></url>`];
+  const urls = [
+    `  <url><loc>${escapeHTML(base.href)}</loc></url>`,
+    `  <url><loc>${escapeHTML(new URL('books/', base).href)}</loc></url>`,
+  ];
   for (const book of books.values()) {
     const lastmod = book.entries.map(({entry}) => entry.publishedAt).filter(Boolean).sort().at(-1);
     urls.push(`  <url><loc>${escapeHTML(new URL(book.route.bookPath, base).href)}</loc>${lastmod ? `<lastmod>${escapeHTML(lastmod)}</lastmod>` : ''}</url>`);
@@ -113,6 +117,44 @@ export function sitemapXML(base, books) {
     }
   }
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
+}
+
+export function booksPageHTML(books, base) {
+  const title = '原著书目 · 拾趣好故事';
+  const description = `按原著浏览 ${books.size} 部书目的精选连环画，在拾趣好故事慢慢读。`;
+  const cards = [...books.values()].sort((a, b) => a.title.localeCompare(b.title, 'zh-Hans')).map(book =>
+    `<article class="story-card"><a class="card-link" href="./${escapeHTML(book.route.bookSlug)}/">`
+      + `<h2 class="card-title">${escapeHTML(book.title)}</h2><p class="card-hook">${book.entries.length} 篇精选连环画</p>`
+      + '<div class="card-meta"><span class="card-action">查看故事 →</span></div></a></article>'
+  ).join('\n      ');
+  const head = headBlock(seoMeta({title, description, canonical: base ? new URL('books/', base).href : null, type: 'website'}));
+  return `<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f4ed">
+  <meta name="description" content="${escapeHTML(description)}">
+  <title>${escapeHTML(title)}</title>
+${head}
+  <link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#books">跳到原著书目</a>
+  <header class="masthead wrap"><a class="brand" href="../" aria-label="拾趣好故事首页"><span class="seal" aria-hidden="true">拾</span><span>拾趣<span class="brand-small">好故事</span></span></a><nav aria-label="主导航"><a class="nav-link" href="../#collection">作品集</a><a class="nav-link active" href="./" aria-current="page">书目</a></nav></header>
+  <main>
+    <section id="books" class="collection wrap" aria-labelledby="books-title">
+      <div class="section-heading"><div><p class="eyebrow">THE BOOKS</p><h1 id="books-title">原著书目 <span class="count">${books.size} 部</span></h1></div></div>
+      ${cards ? `<div class="story-grid">
+      ${cards}
+      </div>` : '<div class="empty-state"><h2>好故事，正在收集。</h2><p>收录作品后，这里将显示原著书目及篇数。</p></div>'}
+    </section>
+  </main>
+  <footer class="footer wrap"><span>拾趣好故事</span><span>古典有余味，画页有新意。</span><a href="../">返回作品集</a></footer>
+</body>
+</html>
+`;
 }
 
 async function copySite(source, destination, topLevel = true) {
@@ -236,6 +278,11 @@ export async function build(root = ROOT) {
       assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB，请先压缩或移除大图。');
       await writeFile(path.join(staging, 'books', book.route.bookSlug, 'index.html'), html);
     }
+    const booksPage = booksPageHTML(books, base);
+    size += Buffer.byteLength(booksPage);
+    assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB，请先压缩或移除大图。');
+    await mkdir(path.join(staging, 'books'), {recursive: true});
+    await writeFile(path.join(staging, 'books', 'index.html'), booksPage);
     if (base) {
       const sitemap = sitemapXML(base, books);
       size += Buffer.byteLength(sitemap);

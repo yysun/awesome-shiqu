@@ -69,7 +69,7 @@ pnpm preview
 
 `pnpm preview` 与 `pnpm dev` 只读取本次 `pnpm build` 生成的本地目录、封面和 ZIP，避免远程旧目录覆盖本地修改。预览服务器仅在返回配置时关闭远程目录优先，不修改 `site/config.json` 或构建文件；线上静态站仍按发布配置连接 GitHub。修改预览服务器代码后需重启预览服务。
 
-`pnpm build` 会为每篇作品生成对搜索引擎友好的静态页面：`books/<原著>/<作品名>/` 为作品页，`books/<原著>/` 为书目页，均带有规范链接（canonical）与 Open Graph 元信息；配置了 GitHub 仓库时还会生成 `sitemap.xml`。书架的原著下拉菜单跳转到对应书目页，卡片和分享链接指向作品页；原有 `reader.html?story=<编号>` 链接继续有效。
+`pnpm build` 会生成对搜索引擎友好的静态页面：`books/` 为原著书目总览，按书名排序列出各原著及收录篇数，空作品集也会生成带提示的总览页；`books/<原著>/` 为书目页，`books/<原著>/<作品名>/` 为作品页。页面均带有 Open Graph 元信息；配置了 GitHub 仓库时还会生成规范链接（canonical）与包含总览页的 `sitemap.xml`。首页导航和书目页可进入总览；书架的原著下拉菜单跳转到对应书目页，卡片和分享链接指向作品页；原有 `reader.html?story=<编号>` 链接继续有效。
 
 本地 ZIP 未提交时，日期暂用文件修改日期；合并后使用 Git 记录中的首次提交日期。原有 `stories/<slug>/story.json` 格式与 `pnpm import:story` 仍可本地构建阅读；远程目录只接受 `works/` ZIP。有旧作品时，先将原始拾趣 ZIP 放入 `works/` 并移除相应旧目录，再启用自动发布。
 
