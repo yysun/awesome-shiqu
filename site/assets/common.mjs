@@ -1,4 +1,5 @@
 import {loadCatalog} from './library.mjs';
+import {storyRoutes} from './story-url.mjs';
 export const ROOT = new URL('../', import.meta.url);
 export const validId = value => typeof value === 'string' && /^[a-z0-9][a-z0-9-]{0,119}$/.test(value);
 const storageKey = 'awesome-shiqu:v1';
@@ -16,8 +17,12 @@ export function internalURL(path, base = ROOT) {
 export function externalURL(path) {
   try { const url = new URL(path); return /^https?:$/.test(url.protocol) && !url.username && !url.password ? url : null; } catch { return null; }
 }
+let routes = new Map();
+export function storyRoute(id) { return routes.get(id) || null; }
 export function storyLink(id) {
   if (!validId(id)) throw Error('作品编号无效。');
+  const route = routes.get(id);
+  if (route) return new URL(route.path, ROOT);
   const url = new URL('reader.html', ROOT); url.searchParams.set('story', id); return url;
 }
 function state() {
@@ -57,4 +62,8 @@ export function bookmarkIcon() {
 }
 let libraryPromise;
 export function libraryInfo() { return libraryPromise ??= loadCatalog(); }
-export async function catalog() { return (await libraryInfo()).stories; }
+export async function catalog() {
+  const stories = (await libraryInfo()).stories;
+  routes = storyRoutes(stories);
+  return stories;
+}

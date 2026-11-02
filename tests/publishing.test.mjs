@@ -45,7 +45,11 @@ async function workspace(t) {
   t.after(() => rm(root, {recursive: true, force: true}));
   await mkdir(path.join(root, 'site'), {recursive: true});
   await writeFile(path.join(root, 'site', 'index.html'), '<!doctype html><title>书架</title>');
-  await writeFile(path.join(root, 'site', 'reader.html'), '<!doctype html><title>阅读</title>');
+  await writeFile(path.join(root, 'site', 'reader.html'),
+    '<!doctype html><html lang="zh-Hans"><head><meta charset="utf-8"><meta name="description" content="在拾趣好故事，翻开一篇精选古典连环画。"><title>阅读 · 拾趣好故事</title><link rel="stylesheet" href="./assets/site.css"></head><body><a href="./">作品集</a></body></html>');
+  await writeFile(path.join(root, 'site', 'config.json'), JSON.stringify({
+    github: {owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', directory: 'works', catalog: 'catalog/catalog.json'},
+  }) + '\n');
   return root;
 }
 
@@ -140,6 +144,27 @@ test('validates manually edited manifests and refuses image paths or symlinks ou
   const external = path.join(root, 'outside.png'); await writeFile(external, PNG);
   await symlink(external, image);
   await assert.rejects(readLibrary(root), /符号链接/);
+});
+
+test('publishes SEO-friendly book and story pages with canonical URLs and a sitemap', async t => {
+  const root = await workspace(t), input = path.join(root, 'export.zip');
+  await writeFile(input, storyZip());
+  const manifest = await importStory(input, OPTIONS, root);
+  const summary = await build(root);
+  assert.equal(summary.books, 1);
+  const storyPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', '螳螂捕蝉', 'index.html'), 'utf8');
+  assert.match(storyPage, /<title>螳螂捕蝉 · 说苑·正谏 · 拾趣好故事<\/title>/);
+  assert.equal(storyPage.includes(`<meta name="shiqu:story" content="${manifest.id}">`), true);
+  assert.equal(storyPage.includes('href="../../../assets/site.css"'), true);
+  const canonical = new URL('books/说苑-正谏/螳螂捕蝉/', 'https://yysun.github.io/awesome-shiqu/').href;
+  assert.equal(storyPage.includes(`<link rel="canonical" href="${canonical}">`), true);
+  assert.equal(storyPage.includes(`<meta property="og:image" content="${new URL(`stories/${manifest.id}/images/01.png`, 'https://yysun.github.io/awesome-shiqu/').href}">`), true);
+  const bookPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', 'index.html'), 'utf8');
+  assert.equal(bookPage.includes('href="./螳螂捕蝉/"'), true);
+  assert.equal(bookPage.includes(`src="../../stories/${manifest.id}/images/01.png"`), true);
+  const sitemap = await readFile(path.join(root, 'dist', 'sitemap.xml'), 'utf8');
+  assert.equal(sitemap.includes(`<loc>${canonical}</loc>`), true);
+  assert.equal(sitemap.includes('<loc>https://yysun.github.io/awesome-shiqu/</loc>'), true);
 });
 
 test('empty collections build, and failed builds preserve the previous published output', async t => {

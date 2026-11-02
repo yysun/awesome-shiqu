@@ -1,9 +1,10 @@
 // Render untrusted story prose as text and retain reading progress across grid and scroll layouts.
-import { ROOT, validId, catalog, internalURL, externalURL, storyLink, savedStories, toggleSaved, progressFor, saveProgress, node, toast } from './common.mjs';
+import { ROOT, validId, catalog, internalURL, externalURL, storyLink, storyRoute, savedStories, toggleSaved, progressFor, saveProgress, node, toast } from './common.mjs';
 import {loadArchive, loadLocalArchive} from './library.mjs';
 import {validateGenerationModels} from './story-archive.mjs';
 const $ = selector => document.querySelector(selector);
-const params = new URLSearchParams(location.search), id = params.get('story');
+const params = new URLSearchParams(location.search);
+const id = params.get('story') || document.querySelector('meta[name="shiqu:story"]')?.content || null;
 const localPreview = params.get('preview') === '1';
 let story, imageURLs, artwork, current = 0, mode = 'multi', pages = [], ticking = false;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -103,7 +104,10 @@ try {
   if (artwork) window.addEventListener('pagehide', event => { if (!event.persisted) artwork.dispose(); });
   document.title = story.title + ' · 拾趣好故事';
   $('meta[name="description"]').content = story.hook || story.title;
-  $('#story-source').textContent = story.book || story.source?.title || '拾趣精选';
+  const bookName = story.book || story.source?.title || '拾趣精选';
+  const route = localPreview ? null : storyRoute(story.id);
+  if (route) { const bookLink = node('a', '', bookName); bookLink.href = new URL(route.bookPath, ROOT); $('#story-source').replaceChildren(bookLink); }
+  else $('#story-source').textContent = bookName;
   $('#story-title').textContent = story.title;
   $('#story-hook').textContent = story.hook || '';
   const models = validateGenerationModels(story.generationModels);

@@ -42,7 +42,8 @@ async function workspace(t) {
   t.after(() => rm(root, {recursive: true, force: true}));
   await mkdir(path.join(root, 'site'));
   await writeFile(path.join(root, 'site/index.html'), '<!doctype html><title>测试书架</title>');
-  await writeFile(path.join(root, 'site/reader.html'), '<!doctype html><title>测试阅读器</title>');
+  await writeFile(path.join(root, 'site/reader.html'),
+    '<!doctype html><html lang="zh-Hans"><head><meta charset="utf-8"><meta name="description" content="测试阅读器"><title>测试阅读器</title><link rel="stylesheet" href="./assets/site.css"></head><body><a href="./">作品集</a></body></html>');
   await mkdir(path.join(root, 'works/alice'), {recursive: true});
   await writeFile(path.join(root, 'works/alice/test-story.zip'), ARCHIVE);
   return root;
