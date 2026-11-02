@@ -2,6 +2,8 @@
 
 Git base: `411c25f9a9ca4ed7a26e17ddbe2191b3b1b7db6a`。需求：`.docs/reqs/2026/11/02/req-reading-site-ia.md`；E2E：`.docs/tests/test-reading-site-ia.md`。
 
+里程碑提交：`8d0ab73`（实现 + 测试 + 文档）、`e87061d`（移除 ZIP 下载链接）；`pnpm test` 76/76、`pnpm build` 通过。CR passed（独立评审，第 1 轮）。
+
 Risk: non-low — 公开 URL 结构与导航属于消费者契约，跨构建脚本/客户端模块/模板协调，新增维护者数据文件（`site/featured.json`）。
 
 ## 结构决定
@@ -11,7 +13,7 @@ Risk: non-low — 公开 URL 结构与导航属于消费者契约，跨构建脚
 - **精选**：`site/featured.json` → `{"stories":[{"path":"works/<用户名>/<作品名>.zip","note":"…"}]}`。`archiveCatalogEntry` 补充 `sourcePath`（与 `scripts/catalog.mjs` 对齐，schema 不变，仅加可选字段）；`validateCatalog` 校验可选 `sourcePath` 为满足 `validArchivePath` 的字符串。校验逻辑放在 `site/assets/featured.mjs`（Node 与浏览器共用）：对象、`stories` 数组 ≤ 50、`path` 满足 `validArchivePath`、`note` 为 ≤ 200 字符字符串、路径不重复。三种状态统一：文件不存在 → 构建与运行时均视为空精选（首页不渲染精选区、导航隐藏"精选"、`featured/` 显示空状态）；文件存在但格式错误 → 构建失败，运行时视为空并 `console.warn`；引用了目录中不存在的 `sourcePath` → 构建失败，运行时（远程目录可能领先/落后）跳过该条。旧版 `stories/` 清单作品没有 `sourcePath`，仍可浏览、不可被精选引用。
 - **共享页面壳**：`scripts/build.mjs` 抽出 `pageShell({depth, active, title, description, canonical, cover, body, skipTarget})`，统一 masthead（品牌 + 导航：精选 / 书目 / 分类 / 全部作品 + 搜索表单 `GET collection/?q=`）、页脚与 canonical/Open Graph。静态列表页（`books/`、`books/<书>/`、`themes/`、`themes/<slug>/`、`styles/<slug>/`）以及客户端渲染的 `featured/`、`collection/` 都由构建用同一壳生成（后两者主体只有空容器与 `<script type="module">`），`site/` 不再手写这两页。首页 `site/index.html` 保留手写 hero，但 masthead/页脚标记与壳一致；构建以 `homePageHTML(template, base)` 为其注入 canonical/OG。阅读页保留精简 `reader-header`（返回书目 + 品牌 + 阅读方式 + 收藏/分享），新增面包屑，并追加与壳相同的页脚；不放主导航，避免干扰阅读。发布测试按页面类别断言：壳页面（首页、`books/*`、`themes/*`、`styles/*`、`featured/`、`collection/`）含同一组导航项与页脚，且除首页外恰有一个与自身类别匹配的 `aria-current="page"`；`featured.json` 为空时导航不含"精选"项，此时 `featured/` 页本身没有 `aria-current`（唯一例外），其余壳页面不变；阅读页（`reader.html` 与 `books/<书>/<故事>/`）只断言面包屑/返回链接与页脚；所有 HTML 的相对链接在各深度都能解析到 dist 内存在的文件或目录。`reader.html` 不写静态 canonical，`reader.mjs` 在通过 `?story=` 打开已收录作品时把 `<link rel="canonical">` 指向该作品静态页。
 - **客户端模块**：`cards.mjs`（从 `shelf.mjs` 抽出 `storyCard`，供首页/精选/全部作品/阅读页推荐共用，带收藏按钮与阅读进度）；`shelf.mjs` 改为 `collection/` 页脚本（保留搜索/排序/收藏切换，新增原著、主题、画风下拉可组合筛选，读取 `?q=` 与 `?scope=saved`）；新增 `home.mjs`、`featured.mjs`（页面脚本名 `featured-page.mjs` 以区分数据模块）。
-- **阅读页**：`reader.html` 返回链接与新增面包屑在有路由时指向书目页；`story-ending` 增加上一篇/下一篇与"同书更多""同主题更多"（各 ≤ 3，排除当前篇），本地试读隐藏。模板 `"./` → `"../../../"` 的重写规则不变。
+- **阅读页**：`reader.html` 返回链接与新增面包屑在有路由时指向书目页；移除「出处、署名与转载说明」中的「下载作品 ZIP」链接及其脚本（用户要求不提供下载）；`story-ending` 增加上一篇/下一篇与"同书更多""同主题更多"（各 ≤ 3，排除当前篇），本地试读隐藏。模板 `"./` → `"../../../"` 的重写规则不变。
 - **兼容**：首页 `#collection` 哈希跳转到 `collection/`；首页保留 `id="contribute"` 投稿段落，`#contribute` 锚点继续有效；`reader.html?story=`、`?preview=1` 不变；`copySite` 保留路径加入构建生成的 `themes`、`styles`、`featured`、`collection`。
 - **样式**：复用 `story-card`、`story-grid`、`section-heading`、`shelf-tabs`、`filters`、`nav-link`；新增少量类：`.masthead-search`、`.book-card`、`.facet-chips`、`.breadcrumb`、`.story-nav`（上一篇/下一篇）、`.recommend`。不改配色与字体。
 
@@ -27,7 +29,7 @@ Risk: non-low — 公开 URL 结构与导航属于消费者契约，跨构建脚
 - [x] `site/assets/site.css`：新增类样式，含 760px 以下导航与搜索的收纳。
 - [x] `site/featured.json`：初始精选 6 篇，带简短中性推荐语；构建曾因一个文件名写错而失败并指出路径，验证了校验路径。
 - [x] `README.md`：更新"阅读站怎样更新"中的 `pnpm build` 生成页面说明与首页导航描述；说明 `site/featured.json`。
-- [ ] 验证：`pnpm test`、`pnpm build`、`pnpm preview` 下逐页检查链接与 390px 布局（见 E2E）。SS 阶段：`pnpm test` 76/76，`pnpm build` 17 篇/2 书目/4 分类/6 精选；headless Chrome 检查首页、`collection/?q=`、`?scope=saved`、`#collection` 跳转、`reader.html?story=` 的 canonical/面包屑/上一篇下一篇/推荐，以及 390px/1280px 截图。
+- [x] 验证：`pnpm test`、`pnpm build`、`pnpm preview` 下逐页检查链接与 390px 布局（见 E2E）。SS 阶段：`pnpm test` 76/76，`pnpm build` 17 篇/2 书目/4 分类/6 精选；headless Chrome 检查首页、`collection/?q=`、`?scope=saved`、`#collection` 跳转、`reader.html?story=` 的 canonical/面包屑/上一篇下一篇/推荐，以及 390px/1280px 截图。
 - 补充：`tests/publication.test.mjs` 的工作区复制了生产 `site/`，需移除 `featured.json` 才能用测试 ZIP 构建（精选校验按设计拒绝未收录路径）。
 
 ## 风险

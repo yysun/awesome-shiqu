@@ -132,7 +132,6 @@ try {
         $('#reader-status').textContent = total ? `正在下载故事 ZIP · ${Math.min(100, Math.round(bytes / total * 100))}%` : `正在下载故事 ZIP · ${(bytes / 1024 / 1024).toFixed(1)} MiB`;
       }});
       story = artwork.story; imageURLs = artwork.imageURLs;
-      $('#download-story').href = entry.archiveURL; $('#download-story').hidden = false;
     } else {
       manifestURL = internalURL(entry.manifestURL);
       const response = await fetch(manifestURL, {cache: 'no-cache'});
