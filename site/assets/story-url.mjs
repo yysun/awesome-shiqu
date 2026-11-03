@@ -14,7 +14,7 @@ export function storyRoutes(stories) {
     const titleSlug = slugify(story.title) || String(story.id);
     const key = `${bookSlug}/${titleSlug}`;
     counts.set(key, (counts.get(key) || 0) + 1);
-    return {id: story.id, bookTitle: bookTitle || '拾趣精选', bookSlug, titleSlug, key};
+    return { id: story.id, bookTitle: bookTitle || '拾趣精选', bookSlug, titleSlug, key };
   });
   for (const entry of entries) {
     const storySlug = counts.get(entry.key) > 1 ? `${entry.titleSlug}--${entry.id}` : entry.titleSlug;
@@ -34,22 +34,23 @@ export function compareLatest(a, b) {
 }
 
 export const FACETS = {
-  theme: {field: 'theme', directory: 'themes', label: '主题'},
-  style: {field: 'artStyle', directory: 'styles', label: '画风'},
+  author: { field: 'author', directory: 'authors', label: '作者' },
+  theme: { field: 'theme', directory: 'themes', label: '主题' },
+  style: { field: 'artStyle', directory: 'styles', label: '画风' },
 };
 
 const facetTitle = (story, field) => (typeof story?.[field] === 'string' ? story[field].trim() : '');
 
-// Facet pages: themes/<slug>/ and styles/<slug>/. Stories without the field join no group.
+// Facet pages use one directory per field. Stories without the field join no group.
 export function facetRoutes(stories) {
-  const result = {theme: new Map(), style: new Map()};
-  for (const [kind, {field, directory}] of Object.entries(FACETS)) {
+  const result = Object.fromEntries(Object.keys(FACETS).map(kind => [kind, new Map()]));
+  for (const [kind, { field, directory }] of Object.entries(FACETS)) {
     const groups = result[kind];
     for (const story of Array.isArray(stories) ? stories : []) {
       const title = facetTitle(story, field), slug = slugify(title);
       if (!slug) continue;
       let group = groups.get(slug);
-      if (!group) { group = {kind, slug, title, titles: [], path: `${directory}/${slug}/`, stories: []}; groups.set(slug, group); }
+      if (!group) { group = { kind, slug, title, titles: [], path: `${directory}/${slug}/`, stories: [] }; groups.set(slug, group); }
       if (!group.titles.includes(title)) group.titles.push(title);
       group.stories.push(story);
     }
@@ -73,7 +74,7 @@ export function groupByBook(stories, routes = storyRoutes(stories)) {
     const route = routes.get(story.id);
     if (!route) continue;
     let book = books.get(route.bookSlug);
-    if (!book) { book = {slug: route.bookSlug, title: route.bookTitle, titles: [], path: route.bookPath, stories: []}; books.set(route.bookSlug, book); }
+    if (!book) { book = { slug: route.bookSlug, title: route.bookTitle, titles: [], path: route.bookPath, stories: [] }; books.set(route.bookSlug, book); }
     const title = slugify(route.bookTitle) ? route.bookTitle : '拾趣精选';
     if (!book.titles.includes(title)) book.titles.push(title);
     book.stories.push(story);
@@ -89,8 +90,8 @@ export function groupByBook(stories, routes = storyRoutes(stories)) {
 // Distinct titles that collapse into one URL would silently merge; the build refuses them.
 export function slugConflicts(stories) {
   const conflicts = [];
-  for (const book of groupByBook(stories).values()) if (book.titles.length > 1) conflicts.push({kind: '书名', slug: book.slug, titles: book.titles});
+  for (const book of groupByBook(stories).values()) if (book.titles.length > 1) conflicts.push({ kind: '书名', slug: book.slug, titles: book.titles });
   const facets = facetRoutes(stories);
-  for (const kind of Object.keys(FACETS)) for (const group of facets[kind].values()) if (group.titles.length > 1) conflicts.push({kind: FACETS[kind].label, slug: group.slug, titles: group.titles});
+  for (const kind of Object.keys(FACETS)) for (const group of facets[kind].values()) if (group.titles.length > 1) conflicts.push({ kind: FACETS[kind].label, slug: group.slug, titles: group.titles });
   return conflicts;
 }

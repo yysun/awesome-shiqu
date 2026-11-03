@@ -1,22 +1,22 @@
 // Exercise import and static publication using temporary, non-production story fixtures.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp, mkdir, readFile, readdir, rm, stat, symlink, writeFile} from 'node:fs/promises';
-import {fileURLToPath, pathToFileURL} from 'node:url';
+import { mkdtemp, mkdir, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
-import {deflateRawSync} from 'node:zlib';
-import {argumentsForImport, importStory, parseStoryboard, prepareStory} from '../scripts/import-story.mjs';
-import {build} from '../scripts/build.mjs';
-import {LIMITS, makeCatalog, readLibrary, validateManifest} from '../scripts/content.mjs';
-import {crc32, readZip} from '../scripts/zip.mjs';
+import { deflateRawSync } from 'node:zlib';
+import { argumentsForImport, importStory, parseStoryboard, prepareStory } from '../scripts/import-story.mjs';
+import { build } from '../scripts/build.mjs';
+import { LIMITS, makeCatalog, readLibrary, validateManifest } from '../scripts/content.mjs';
+import { crc32, readZip } from '../scripts/zip.mjs';
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3ioAAAAASUVORK5CYII=', 'base64');
 const SOURCE = `# 螳螂捕蝉\n\n少年用一则故事劝谏吴王。\n\n主题：聪明与糊涂\n\n出处：《说苑·正谏》\n\n出处链接：https://example.org/source\n\n画风：水墨写意\n\n## 制作要求\n\nPRIVATE-PRODUCTION-PROMPT\n\n## 第 1 幅\n\n图片：图片/01.png\n\n### 旁白\n\n吴王准备出兵，少年决定劝谏。\n\n### 画面提示词\n\nPRIVATE-IMAGE-PROMPT-ONE\n\n## 第 2 幅\n\n图片：图片/02.png\n\n### 旁白\n\n螳螂盯着蝉，身后的黄雀也在等待。\n\n### 画面提示词\n\nPRIVATE-IMAGE-PROMPT-TWO\n\n## 余味\n\n看见眼前的利益，也别忘了身后的风险。\n\n## 改编说明\n\n根据古典寓言改编，文字与插画使用 AI 辅助制作。\n`;
-const OPTIONS = {slug: 'tang-lang-bu-chan', author: '测试作者', date: '2026-11-01'};
+const OPTIONS = { slug: 'tang-lang-bu-chan', author: '测试作者', date: '2026-11-01' };
 
 // Build standards-shaped archives without adding a runtime package dependency.
-function zip(entries, {deflate = false} = {}) {
+function zip(entries, { deflate = false } = {}) {
   const locals = [], central = [];
   let offset = 0;
   for (const [name, input] of entries) {
@@ -44,13 +44,13 @@ function storyZip(options) { return zip([['分镜.md', SOURCE], ['图片/01.png'
 function centralOffset(buffer) { return buffer.readUInt32LE(buffer.length - 22 + 16); }
 async function workspace(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'awesome-shiqu-test-'));
-  t.after(() => rm(root, {recursive: true, force: true}));
-  await mkdir(path.join(root, 'site'), {recursive: true});
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(path.join(root, 'site'), { recursive: true });
   await writeFile(path.join(root, 'site', 'index.html'), '<!doctype html><title>书架</title>');
   await writeFile(path.join(root, 'site', 'reader.html'),
     '<!doctype html><html lang="zh-Hans"><head><meta charset="utf-8"><meta name="description" content="在拾趣好故事，翻开一篇精选古典连环画。"><title>阅读 · 拾趣好故事</title><link rel="stylesheet" href="./assets/site.css"></head><body><a href="./">作品集</a></body></html>');
   await writeFile(path.join(root, 'site', 'config.json'), JSON.stringify({
-    github: {owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', directory: 'works', catalog: 'catalog/catalog.json'},
+    github: { owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', directory: 'works', catalog: 'catalog/catalog.json' },
   }) + '\n');
   return root;
 }
@@ -62,7 +62,7 @@ test('imports a real-shaped UTF-8 export, publishes only selected fields, and bu
   assert.equal(manifest.title, '螳螂捕蝉');
   assert.equal(manifest.book, '说苑·正谏');
   assert.equal(manifest.author, '');
-  assert.equal(manifest.contributor,OPTIONS.author);
+  assert.equal(manifest.contributor, OPTIONS.author);
   assert.equal(manifest.pages.length, 2);
   assert.equal(manifest.pages[1].image, 'images/02.png');
   assert.equal(JSON.stringify(manifest).includes('PRIVATE-'), false);
@@ -85,7 +85,7 @@ test('imports a real-shaped UTF-8 export, publishes only selected fields, and bu
 });
 
 test('accepts deflated archives and Windows newlines, keeping prompts out of all public metadata', () => {
-  const parsed = prepareStory(storyZip({deflate: true}), {...OPTIONS, book: '说苑', sourceUrl: 'https://example.org/new'});
+  const parsed = prepareStory(storyZip({ deflate: true }), { ...OPTIONS, book: '说苑', sourceUrl: 'https://example.org/new' });
   assert.equal(parsed.manifest.book, '说苑');
   assert.equal(parsed.manifest.source.url, 'https://example.org/new');
   assert.equal(JSON.stringify(makeCatalog([parsed])).includes('PRIVATE-'), false);
@@ -118,7 +118,7 @@ test('rejects corrupted archives, mismatched headers, and declared or actual dec
   const tooLarge = zip([['image.png', PNG]]);
   tooLarge.writeUInt32LE(LIMITS.imageBytes + 1, centralOffset(tooLarge) + 24);
   assert.throws(() => readZip(tooLarge), /过大/);
-  const bomb = zip([['image.png', Buffer.alloc(1024 * 1024, 97)]], {deflate: true});
+  const bomb = zip([['image.png', Buffer.alloc(1024 * 1024, 97)]], { deflate: true });
   bomb.writeUInt32LE(2, 22); bomb.writeUInt32LE(2, centralOffset(bomb) + 24);
   assert.throws(() => readZip(bomb), /超过声明大小/);
   assert.throws(() => readZip(storyZip().subarray(0, -1)), /有效 ZIP/);
@@ -129,19 +129,19 @@ test('rejects incomplete storyboards, missing images, non-images, and invalid da
   assert.throws(() => parseStoryboard(SOURCE.replace('### 旁白', '### 其他')), /没有找到画面/);
   assert.throws(() => prepareStory(zip([['分镜.md', SOURCE], ['图片/01.png', PNG]]), OPTIONS), /缺少第 2/);
   assert.throws(() => prepareStory(zip([['分镜.md', SOURCE], ['图片/01.png', '<html>not image</html>'], ['图片/02.png', PNG]]), OPTIONS), /不是可识别/);
-  assert.throws(() => prepareStory(storyZip(), {...OPTIONS, date: '2026-02-30'}), /有效日期/);
-  assert.throws(() => prepareStory(storyZip(), {...OPTIONS, sourceUrl: 'javascript:alert(1)'}), /http/);
-  assert.throws(() => prepareStory(storyZip(), {...OPTIONS, sourceUrl: 'https://user:secret@example.org'}), /凭据/);
-  assert.throws(() => prepareStory(storyZip(), {...OPTIONS, slug: '../other'}), /slug/);
+  assert.throws(() => prepareStory(storyZip(), { ...OPTIONS, date: '2026-02-30' }), /有效日期/);
+  assert.throws(() => prepareStory(storyZip(), { ...OPTIONS, sourceUrl: 'javascript:alert(1)' }), /http/);
+  assert.throws(() => prepareStory(storyZip(), { ...OPTIONS, sourceUrl: 'https://user:secret@example.org' }), /凭据/);
+  assert.throws(() => prepareStory(storyZip(), { ...OPTIONS, slug: '../other' }), /slug/);
 });
 
 test('validates manually edited manifests and refuses image paths or symlinks outside a story', async t => {
   const root = await workspace(t), input = path.join(root, 'export.zip');
   await writeFile(input, storyZip());
   const manifest = await importStory(input, OPTIONS, root);
-  assert.throws(() => validateManifest({...manifest, productionPrompt: 'private'}), /未知字段/);
-  assert.throws(() => validateManifest({...manifest, pages: [{image: '../other/images/01.png', caption: '坏路径'}]}), /本作品/);
-  assert.throws(() => validateManifest({...manifest, pages: [{image: 'https://example.org/image.png', caption: '远程图片'}]}), /本作品/);
+  assert.throws(() => validateManifest({ ...manifest, productionPrompt: 'private' }), /未知字段/);
+  assert.throws(() => validateManifest({ ...manifest, pages: [{ image: '../other/images/01.png', caption: '坏路径' }] }), /本作品/);
+  assert.throws(() => validateManifest({ ...manifest, pages: [{ image: 'https://example.org/image.png', caption: '远程图片' }] }), /本作品/);
   const image = path.join(root, 'stories', manifest.id, 'images', '01.png');
   await rm(image);
   const external = path.join(root, 'outside.png'); await writeFile(external, PNG);
@@ -180,8 +180,8 @@ test('publishes a static books overview with grouped counts, escaped titles, and
   const root = await workspace(t), input = path.join(root, 'export.zip');
   await writeFile(input, storyZip());
   await importStory(input, OPTIONS, root);
-  await importStory(input, {...OPTIONS, slug: 'second-story'}, root);
-  await importStory(input, {...OPTIONS, slug: 'third-story', book: '三国演义 <script> & "选"'}, root);
+  await importStory(input, { ...OPTIONS, slug: 'second-story' }, root);
+  await importStory(input, { ...OPTIONS, slug: 'third-story', book: '三国演义 <script> & "选"' }, root);
   const summary = await build(root);
   assert.equal(summary.books, 2);
   const overview = await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8');
@@ -254,7 +254,7 @@ test('empty collections build, and failed builds preserve the previous published
   const root = await workspace(t);
   const empty = await build(root);
   assert.equal(empty.count, 0);
-  assert.deepEqual(JSON.parse(await readFile(path.join(root, 'dist', 'catalog.json'), 'utf8')), {schemaVersion: 1, stories: []});
+  assert.deepEqual(JSON.parse(await readFile(path.join(root, 'dist', 'catalog.json'), 'utf8')), { schemaVersion: 1, stories: [] });
   const overview = await readFile(path.join(root, 'dist', 'books', 'index.html'), 'utf8');
   assert.match(overview, /<span class="count">0 部<\/span>/);
   assert.match(overview, /好故事，正在收集。/);
@@ -268,7 +268,7 @@ test('empty collections build, and failed builds preserve the previous published
 });
 
 test('CLI requires explicit contributor identity and rejects unknown or repeated parameters', () => {
-  assert.deepEqual(argumentsForImport(['sample.zip', '--slug', 'story', '--author', '作者']).options, {slug: 'story', author: '作者'});
+  assert.deepEqual(argumentsForImport(['sample.zip', '--slug', 'story', '--author', '作者']).options, { slug: 'story', author: '作者' });
   assert.throws(() => argumentsForImport(['sample.zip', '--slug', 'story']), /必填/);
   assert.throws(() => argumentsForImport(['sample.zip', '--slug', 'story', '--author', '作者', '--force', 'true']), /无效/);
   assert.throws(() => argumentsForImport(['sample.zip', '--slug', 'a', '--slug', 'b']), /重复/);
@@ -288,7 +288,7 @@ async function assertLinksResolve(root, relativeFile, html) {
 }
 async function htmlFiles(directory, prefix = '') {
   const result = [];
-  for (const entry of await readdir(directory, {withFileTypes: true})) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (entry.isDirectory()) result.push(...await htmlFiles(path.join(directory, entry.name), prefix + entry.name + '/'));
     else if (entry.name.endsWith('.html')) result.push(prefix + entry.name);
   }
@@ -304,15 +304,19 @@ test('publishes category pages and a consistent masthead whose links resolve at 
   await mkdir(path.join(root, 'site', 'assets'));
   for (const name of ['mark.svg', 'site.css', 'shelf.mjs', 'featured-page.mjs']) await writeFile(path.join(root, 'site', 'assets', name), '');
   await writeFile(input, storyZip());
-  await importStory(input, OPTIONS, root);
+  const manifest = await importStory(input, OPTIONS, root);
+  manifest.author = '测试作者';
+  await writeFile(path.join(root, 'stories', manifest.id, 'story.json'), JSON.stringify(manifest) + '\n');
   await writeFile(input, zip([['分镜.md', SOURCE.replace('主题：聪明与糊涂\n\n', '').replace('画风：水墨写意', '画风：<b>剪纸</b>')], ['图片/01.png', PNG], ['图片/02.png', PNG]]));
-  await importStory(input, {...OPTIONS, slug: 'no-theme', book: '三国演义'}, root);
+  await importStory(input, { ...OPTIONS, slug: 'no-theme', book: '三国演义' }, root);
   const summary = await build(root);
   assert.equal(summary.themes, 1); assert.equal(summary.styles, 2); assert.equal(summary.featured, 0);
   const themes = await readFile(path.join(root, 'dist', 'themes', 'index.html'), 'utf8');
   assert.match(themes, /<title>故事分类 · 拾趣好故事<\/title>/);
   assert.match(themes, /<h2 id="themes-title">按主题 <span class="count">1 类<\/span><\/h2>/);
   assert.match(themes, /<h2 id="styles-title">按画风 <span class="count">2 类<\/span><\/h2>/);
+  assert.match(themes, /<h2 id="authors-title">按作者 <span class="count">1 类<\/span><\/h2>/);
+  assert.equal(themes.includes('href="../authors/测试作者/"'), true);
   assert.equal(themes.includes('href="../themes/聪明与糊涂/"'), true);
   assert.equal(themes.includes('href="../styles/b-剪纸-b/"'), true);
   assert.equal(themes.includes('&lt;b&gt;剪纸&lt;/b&gt;'), true);
@@ -326,6 +330,8 @@ test('publishes category pages and a consistent masthead whose links resolve at 
   assert.equal(theme.includes('<a class="nav-link active" href="../../themes/" aria-current="page">分类</a>'), true);
   const style = await readFile(path.join(root, 'dist', 'styles', 'b-剪纸-b', 'index.html'), 'utf8');
   assert.equal(style.includes('href="../../styles/水墨写意/"'), true, '其他画风入口');
+  const author = await readFile(path.join(root, 'dist', 'authors', '测试作者', 'index.html'), 'utf8');
+  assert.match(author, /<h1 id="facet-title">测试作者 <span class="count">1 篇<\/span><\/h1>/);
   const bookPage = await readFile(path.join(root, 'dist', 'books', '三国演义', 'index.html'), 'utf8');
   assert.equal(bookPage.includes('<span class="chip-kicker">画风</span>&lt;b&gt;剪纸&lt;/b&gt;'), true);
   assert.equal(bookPage.includes('<span class="chip-kicker">主题</span>'), false);
@@ -342,7 +348,7 @@ test('publishes category pages and a consistent masthead whose links resolve at 
   assert.match(featured, /src="\.\.\/assets\/featured-page\.mjs\?v=[0-9a-f]{10}"/);
   const collection = await readFile(path.join(root, 'dist', 'collection', 'index.html'), 'utf8');
   assert.equal(collection.includes('<a class="nav-link active" href="../collection/" aria-current="page">全部作品</a>'), true);
-  assert.equal(collection.includes('id="theme-filter"') && collection.includes('id="style-filter"'), true);
+  assert.equal(collection.includes('id="author-filter"') && collection.includes('id="theme-filter"') && collection.includes('id="style-filter"'), true);
   const files = await htmlFiles(path.join(root, 'dist'));
   assert.ok(files.length >= 9, files.join(','));
   for (const file of files) {
@@ -364,7 +370,7 @@ test('featured lists must reference catalogued works and switch the featured nav
   const root = await workspace(t), input = path.join(root, 'export.zip');
   await writeFile(input, storyZip());
   await importStory(input, OPTIONS, root);
-  await mkdir(path.join(root, 'works', 'alice'), {recursive: true});
+  await mkdir(path.join(root, 'works', 'alice'), { recursive: true });
   await writeFile(path.join(root, 'works', 'alice', '测试 故事.zip'), storyZip());
   await writeFile(path.join(root, 'site', 'featured.json'), '{"stories":[{"path":"works/alice/测试 故事.zip","note":"<b>值得</b>一读"}]}');
   const summary = await build(root);
@@ -397,6 +403,6 @@ test('distinct titles that share one slug stop the build instead of merging page
   const root = await workspace(t), input = path.join(root, 'export.zip');
   await writeFile(input, storyZip());
   await importStory(input, OPTIONS, root);
-  await importStory(input, {...OPTIONS, slug: 'second', book: '说苑 正谏'}, root);
+  await importStory(input, { ...OPTIONS, slug: 'second', book: '说苑 正谏' }, root);
   await assert.rejects(build(root), /同一页面地址.*书名 说苑-正谏（说苑 正谏、说苑·正谏）/);
 });
