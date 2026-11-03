@@ -42,7 +42,7 @@
       "aiGenerated": true,
       "pageCount": 48,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/5f024b46a4b8db98151fa3f481b5854a798e77d058e72a2d65be92729ff7c784.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%85%B3%E7%BE%BD%E8%BF%87%E4%BA%94%E5%85%B3%E6%96%A9%E5%85%AD%E5%B0%86.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%85%B3%E7%BE%BD%E8%BF%87%E4%BA%94%E5%85%B3%E6%96%A9%E5%85%AD%E5%B0%86.zip",
       "sha256": "5f024b46a4b8db98151fa3f481b5854a798e77d058e72a2d65be92729ff7c784",
       "archiveBytes": 12702811,
       "sourcePath": "works/yysun/关羽过五关斩六将.zip"
@@ -88,10 +88,56 @@
       "aiGenerated": true,
       "pageCount": 30,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/30497d850370243bc9552c81cb4835f0cc8840e27b95712672820715bdfe6ee5.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E9%B2%81%E6%8F%90%E8%BE%96%E6%8B%B3%E6%89%93%E9%95%87%E5%85%B3%E8%A5%BF.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E9%B2%81%E6%8F%90%E8%BE%96%E6%8B%B3%E6%89%93%E9%95%87%E5%85%B3%E8%A5%BF.zip",
       "sha256": "30497d850370243bc9552c81cb4835f0cc8840e27b95712672820715bdfe6ee5",
       "archiveBytes": 7901930,
       "sourcePath": "works/yysun/鲁提辖拳打镇关西.zip"
+    },
+    {
+      "publication": {
+        "author": "yysun",
+        "workUrl": "",
+        "contact": "",
+        "sourceNote": "",
+        "reuse": ""
+      },
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "e2c65fea-f82f-4912-a718-4f51265329c3",
+        "revision": 4,
+        "createdAt": "2026-11-03T20:26:39.098Z",
+        "updatedAt": "2026-11-03T20:55:37.319Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-843e70d623dd4f9dc2da7e1f",
+      "title": "武松大闹飞云浦·血溅鸳鸯楼",
+      "hook": "武松助施恩夺回快活林后，被张都监以礼遇、许婚诱入圈套，遭栽赃入狱。施恩奔走，康节级照管，叶孔目改轻案卷，使他免死改配。押解途中武松察觉杀机，在飞云浦挣枷反杀四人，逼问出蒋门神、张团练和张都监的谋害安排，便折返孟州。他潜入张宅，在楼梯口听见三人谈论杀人计划，闯上鸳鸯楼杀死三人，饮酒后血书留名。他又杀死马夫、女使、亲随、夫人、玉兰等宅中人，取走银钱器皿，连夜越过城墙、涉过浅濠，穿上施恩送的麻鞋向东逃去。",
+      "book": "水浒传",
+      "theme": "原典故事",
+      "artStyle": "3D 动画",
+      "author": "yysun",
+      "publishedAt": "2026-11-03",
+      "source": {
+        "title": "《水浒传·第三十回 施恩三入死囚牢 武松大鬧飛雲浦 → 第三十一回 張都監血濺鴛鴦樓 武行者夜走蜈蚣嶺》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E6%B0%B4%E6%BB%B8%E5%82%B3+%28120%E5%9B%9E%E6%9C%AC%29%2F%E7%AC%AC030%E5%9B%9E&oldid=836376"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。依据第三十回及第三十一回入城至越城离孟州的原文，保留前篇既有分镜，续接潜入张宅、鸳鸯楼复仇、血书留名、扩大杀戮及携财逃离的因果。止于第三十一回武松提朴刀投东小路而去，不延伸至古庙遇险、十字坡或蜈蚣岭。保留武松杀害宅中其他人的事实，不替人物补写动机，也不将全部杀戮等同惩恶。对白、旁白作现代简体转述；暴力结果以有限血迹、遮挡和事后状态表现，不突出创口或肢体断离。",
+      "reflection": "受过的冤屈，不能使报复中的每一刀都变得理所当然。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "storyboardModels": [
+        "gpt-6.1-sol"
+      ],
+      "aiGenerated": true,
+      "pageCount": 61,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/563ffd19a6749a11ba98e9ffc6d8ab77af01c72d18d6fa9d509c391901a8e6e3.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E6%AD%A6%E6%9D%BE%E5%A4%A7%E9%97%B9%E9%A3%9E%E4%BA%91%E6%B5%A6%C2%B7%E8%A1%80%E6%BA%85%E9%B8%B3%E9%B8%AF%E6%A5%BC.zip",
+      "sha256": "563ffd19a6749a11ba98e9ffc6d8ab77af01c72d18d6fa9d509c391901a8e6e3",
+      "archiveBytes": 15525619,
+      "sourcePath": "works/yysun/武松大闹飞云浦·血溅鸳鸯楼.zip"
     },
     {
       "publication": {
@@ -134,10 +180,56 @@
       "aiGenerated": true,
       "pageCount": 39,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/1e67879ae693daab0dc99980276a9e4dd4a8bb7a2d0046921e095125e6b1049b.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%90%B4%E7%94%A8%E6%99%BA%E5%8F%96%E7%94%9F%E8%BE%B0%E7%BA%B2.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%90%B4%E7%94%A8%E6%99%BA%E5%8F%96%E7%94%9F%E8%BE%B0%E7%BA%B2.zip",
       "sha256": "1e67879ae693daab0dc99980276a9e4dd4a8bb7a2d0046921e095125e6b1049b",
       "archiveBytes": 13476870,
       "sourcePath": "works/yysun/吴用智取生辰纲.zip"
+    },
+    {
+      "publication": {
+        "author": "yysun",
+        "workUrl": "",
+        "contact": "",
+        "sourceNote": "",
+        "reuse": ""
+      },
+      "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
+      "exportIdentity": {
+        "storyId": "42b934ba-fd2a-4866-9107-7d8995a43991",
+        "revision": 1,
+        "createdAt": "2026-11-03T12:47:26.888Z",
+        "updatedAt": "2026-11-03T20:05:52.932Z"
+      },
+      "contributor": "yysun",
+      "schemaVersion": 1,
+      "id": "yysun--zip-da57c18364b56c57424ae658",
+      "title": "宋公明三败高俅",
+      "hook": "梁山两胜童贯后，宋江派戴宗、刘唐探听军情；高俅获准率十三万军征讨，梁山先截击来军，继以水寨伏击、堵塞退路夺尽官船，再用空放号炮惊退高俅，取得首胜。此后呼延灼等擒获韩存保，宋江礼待并释放他与党世雄，促成朝廷再议招安；高俅却继续进兵，所编连环船遭梁山火攻，陆军又被接连追击，第二次败退，随后更采纳王瑾歪读诏书、诱杀宋江的计策，被吴用识破，梁山众将脱身并反击追兵。高俅再求援军、督造海鳅船，虽遭梁山潜入纵火仍完成备战，却在第三次进攻中遭诱敌深入、阻塞水车、凿船和内应夹击，陆军亦败，自己被张顺擒获；宋江禁杀俘虏、厚待高俅求其代奏招安，席间高俅夸口相扑又被燕青摔倒，最终立誓保奏，留下闻焕章为信，携萧让、乐和撤军赴京，梁山等待消息，所供原文至此未交代保奏结果。",
+      "book": "水浒传",
+      "theme": "原典故事",
+      "artStyle": "3D 动画",
+      "author": "yysun",
+      "publishedAt": "2026-11-03",
+      "source": {
+        "title": "《水浒传·第七十八回 十節度議取梁山泊 宋公明一敗高太尉 → 第八十回 張順鑿漏海鰍船 宋江三敗高太尉》",
+        "url": "https://zh.wikisource.org/w/index.php?title=%E6%B0%B4%E6%BB%B8%E5%82%B3+%28120%E5%9B%9E%E6%9C%AC%29%2F%E7%AC%AC078%E5%9B%9E&oldid=836428"
+      },
+      "adaptationNote": "AI 即时改编，非原文引述；原文节选与改编内容分开保存。依据本次所附定位原文及同版完整章节，编为80幅提纲，压缩调军名目、重复行军、宴饮与战斗回合，保留三次征讨、释俘引出的招安交涉、船厂袭扰及擒放高俅的完整因果；对白拟作自然现代译写，未详写的场景衔接与非关键外观属于AI演绎，不以新增细节解释人物动机；保留高俅赴京、招安保奏尚待结果的原文停点，本阶段不预写结语。",
+      "reflection": "诏书都能被经手人做成圈套，官位本身便不足以替招安的承诺担保。",
+      "generationModels": [
+        "gpt-6.1-sol",
+        "codex-image-generation"
+      ],
+      "storyboardModels": [
+        "gpt-6.1-sol"
+      ],
+      "aiGenerated": true,
+      "pageCount": 79,
+      "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/0148b4b6408c535987ead055734e01b3afde24713b4e34b061713d7402bcb77c.webp",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%8B%E5%85%AC%E6%98%8E%E4%B8%89%E8%B4%A5%E9%AB%98%E4%BF%85.zip",
+      "sha256": "0148b4b6408c535987ead055734e01b3afde24713b4e34b061713d7402bcb77c",
+      "archiveBytes": 23133795,
+      "sourcePath": "works/yysun/宋公明三败高俅.zip"
     },
     {
       "aiDisclosure": "本作品包含 AI 生成的画面与改编文字。",
@@ -173,7 +265,7 @@
       "aiGenerated": true,
       "pageCount": 7,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/ec8d815530da41f3ad11a3277a1b4c914e4cb409e7427e59ad664a825e18d616.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E7%8E%89%E4%B8%8A%E5%AD%A6%E8%BE%9E%E9%BB%9B%E7%8E%89.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E7%8E%89%E4%B8%8A%E5%AD%A6%E8%BE%9E%E9%BB%9B%E7%8E%89.zip",
       "sha256": "ec8d815530da41f3ad11a3277a1b4c914e4cb409e7427e59ad664a825e18d616",
       "archiveBytes": 1896525,
       "sourcePath": "works/yysun/宝玉上学辞黛玉.zip"
@@ -209,7 +301,7 @@
       "aiGenerated": true,
       "pageCount": 75,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/10225541d5e43cc0071ec071d273d26c3038e0796347354e1140999e463e9949.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%98%E6%B8%A1%E4%B9%8B%E6%88%98.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%98%E6%B8%A1%E4%B9%8B%E6%88%98.zip",
       "sha256": "10225541d5e43cc0071ec071d273d26c3038e0796347354e1140999e463e9949",
       "archiveBytes": 18667025,
       "sourcePath": "works/yysun/官渡之战.zip"
@@ -248,7 +340,7 @@
       "aiGenerated": true,
       "pageCount": 14,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/01f08d508de398188de465d7dd9c90b0509ee77fbce3b9a7632d867665dbb526.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E9%BB%9B%E5%85%B1%E8%AF%BB%E8%A5%BF%E5%8E%A2.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E9%BB%9B%E5%85%B1%E8%AF%BB%E8%A5%BF%E5%8E%A2.zip",
       "sha256": "01f08d508de398188de465d7dd9c90b0509ee77fbce3b9a7632d867665dbb526",
       "archiveBytes": 4660277,
       "sourcePath": "works/yysun/宝黛共读西厢.zip"
@@ -284,7 +376,7 @@
       "aiGenerated": true,
       "pageCount": 44,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/14d8799addcaff71c83a96a75c5356af67670802ca9c7ed38fb1feb214d2c7b3.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E9%BB%84%E5%BF%A0%E6%99%BA%E5%8F%96%E5%AE%9A%E5%86%9B%E5%B1%B1.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E9%BB%84%E5%BF%A0%E6%99%BA%E5%8F%96%E5%AE%9A%E5%86%9B%E5%B1%B1.zip",
       "sha256": "14d8799addcaff71c83a96a75c5356af67670802ca9c7ed38fb1feb214d2c7b3",
       "archiveBytes": 11353209,
       "sourcePath": "works/yysun/黄忠智取定军山.zip"
@@ -320,7 +412,7 @@
       "aiGenerated": true,
       "pageCount": 20,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/44bbcad901baa9857a77db5a135cfe3a4d9b5ee8721c41a3906bdbf7ebbef4e9.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%85%83%E6%98%A5%E8%B5%90%E7%A4%BC%E4%B8%8E%E7%BA%A2%E9%BA%9D%E4%B8%B2.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%85%83%E6%98%A5%E8%B5%90%E7%A4%BC%E4%B8%8E%E7%BA%A2%E9%BA%9D%E4%B8%B2.zip",
       "sha256": "44bbcad901baa9857a77db5a135cfe3a4d9b5ee8721c41a3906bdbf7ebbef4e9",
       "archiveBytes": 5323325,
       "sourcePath": "works/yysun/元春赐礼与红麝串.zip"
@@ -359,7 +451,7 @@
       "aiGenerated": true,
       "pageCount": 8,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/94362cc79862abfc69dcf202f919a77c87fef761d6aa96b003654f2c81e94d98.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E9%92%97%E6%9D%A5%E5%90%8E%EF%BC%8C%E5%AE%9D%E9%BB%9B%E5%B0%8F%E9%9A%99.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E9%92%97%E6%9D%A5%E5%90%8E%EF%BC%8C%E5%AE%9D%E9%BB%9B%E5%B0%8F%E9%9A%99.zip",
       "sha256": "94362cc79862abfc69dcf202f919a77c87fef761d6aa96b003654f2c81e94d98",
       "archiveBytes": 1948373,
       "sourcePath": "works/yysun/宝钗来后，宝黛小隙.zip"
@@ -395,7 +487,7 @@
       "aiGenerated": true,
       "pageCount": 22,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/1d81143a68dac4ff2e3bffd7985087fc095b9ccd6ce966645a7e4c8ecdddbd85.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E9%BB%9B%E6%8B%8C%E5%98%B4%EF%BC%8C%E6%B9%98%E4%BA%91%E6%89%93%E8%B6%A3.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E9%BB%9B%E6%8B%8C%E5%98%B4%EF%BC%8C%E6%B9%98%E4%BA%91%E6%89%93%E8%B6%A3.zip",
       "sha256": "1d81143a68dac4ff2e3bffd7985087fc095b9ccd6ce966645a7e4c8ecdddbd85",
       "archiveBytes": 5790617,
       "sourcePath": "works/yysun/宝黛拌嘴，湘云打趣.zip"
@@ -431,7 +523,7 @@
       "aiGenerated": true,
       "pageCount": 36,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/941f162937b73efa68408e73fc02a8e02d63e637a737dd4b56c756ffd129829a.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E9%BB%9B%E7%8E%89%E8%91%AC%E8%8A%B1%E4%B8%8E%E5%AE%9D%E9%BB%9B%E9%87%8A%E7%96%91.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E9%BB%9B%E7%8E%89%E8%91%AC%E8%8A%B1%E4%B8%8E%E5%AE%9D%E9%BB%9B%E9%87%8A%E7%96%91.zip",
       "sha256": "941f162937b73efa68408e73fc02a8e02d63e637a737dd4b56c756ffd129829a",
       "archiveBytes": 11178084,
       "sourcePath": "works/yysun/黛玉葬花与宝黛释疑.zip"
@@ -470,7 +562,7 @@
       "aiGenerated": true,
       "pageCount": 16,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/1bc8352a9fe3fe19a94d47fe18a70907e538e5c186f6b291c0626b64c20b5867.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E9%BB%9B%E7%8E%89%E5%89%AA%E9%A6%99%E5%9B%8A.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E9%BB%9B%E7%8E%89%E5%89%AA%E9%A6%99%E5%9B%8A.zip",
       "sha256": "1bc8352a9fe3fe19a94d47fe18a70907e538e5c186f6b291c0626b64c20b5867",
       "archiveBytes": 4036137,
       "sourcePath": "works/yysun/黛玉剪香囊.zip"
@@ -506,7 +598,7 @@
       "aiGenerated": true,
       "pageCount": 26,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/63d5834d23092cbd09cd715e09f765f54548eb86cb42d7e1fdde593265f8cd39.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E8%8D%AF%E6%96%B9%E9%A3%8E%E6%B3%A2.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E8%8D%AF%E6%96%B9%E9%A3%8E%E6%B3%A2.zip",
       "sha256": "63d5834d23092cbd09cd715e09f765f54548eb86cb42d7e1fdde593265f8cd39",
       "archiveBytes": 7540778,
       "sourcePath": "works/yysun/药方风波.zip"
@@ -542,7 +634,7 @@
       "aiGenerated": true,
       "pageCount": 26,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/cf30e7f3078c2c208d2d54d47e51bbff3b61cc867c27202dbb6a1200fb42a24c.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E7%8E%89%E8%B5%8C%E6%B0%94%E5%8F%82%E7%A6%85.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E7%8E%89%E8%B5%8C%E6%B0%94%E5%8F%82%E7%A6%85.zip",
       "sha256": "cf30e7f3078c2c208d2d54d47e51bbff3b61cc867c27202dbb6a1200fb42a24c",
       "archiveBytes": 6691394,
       "sourcePath": "works/yysun/宝玉赌气参禅.zip"
@@ -578,7 +670,7 @@
       "aiGenerated": true,
       "pageCount": 63,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/35a963efc609ac0d3a29b1f5bcfe6138113d815ed54cfacf57ea61eca9846ca6.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E7%8E%8B%E5%85%81%E5%B7%A7%E6%96%BD%E8%BF%9E%E7%8E%AF%E8%AE%A1%E8%AF%9B%E8%91%A3%E5%8D%93.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E7%8E%8B%E5%85%81%E5%B7%A7%E6%96%BD%E8%BF%9E%E7%8E%AF%E8%AE%A1%E8%AF%9B%E8%91%A3%E5%8D%93.zip",
       "sha256": "35a963efc609ac0d3a29b1f5bcfe6138113d815ed54cfacf57ea61eca9846ca6",
       "archiveBytes": 13642342,
       "sourcePath": "works/yysun/王允巧施连环计诛董卓.zip"
@@ -614,7 +706,7 @@
       "aiGenerated": true,
       "pageCount": 24,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/ba74aeb0ed049b7bbf7f179543a0ac7dfa6765e366ae199f2d1c0f5f6ca38ab4.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E9%BB%9B%E8%AF%89%E8%82%BA%E8%85%91%EF%BC%9A%E2%80%9C%E4%BD%A0%E6%94%BE%E5%BF%83%E2%80%9D.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E9%BB%9B%E8%AF%89%E8%82%BA%E8%85%91%EF%BC%9A%E2%80%9C%E4%BD%A0%E6%94%BE%E5%BF%83%E2%80%9D.zip",
       "sha256": "ba74aeb0ed049b7bbf7f179543a0ac7dfa6765e366ae199f2d1c0f5f6ca38ab4",
       "archiveBytes": 6449358,
       "sourcePath": "works/yysun/宝黛诉肺腑：“你放心”.zip"
@@ -651,7 +743,7 @@
       "aiGenerated": true,
       "pageCount": 44,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/3b6d78f23a6c819fa58a7f3d941ceffc6fa75e77b1b8ff5a769bd42c59278ddf.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E7%8E%89%E6%8E%A2%E7%97%85%E6%A2%A8%E9%A6%99%E9%99%A2.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E7%8E%89%E6%8E%A2%E7%97%85%E6%A2%A8%E9%A6%99%E9%99%A2.zip",
       "sha256": "3b6d78f23a6c819fa58a7f3d941ceffc6fa75e77b1b8ff5a769bd42c59278ddf",
       "archiveBytes": 12522643,
       "sourcePath": "works/yysun/宝玉探病梨香院.zip"
@@ -687,7 +779,7 @@
       "aiGenerated": true,
       "pageCount": 44,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/d69137ae943da86bde05b2ad463bac1cde57985933bfa8f93b8ee9f1c0c9828d.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E9%BB%9B%E6%80%84%E6%B0%94%E5%8F%88%E8%A8%80%E5%92%8C.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E9%BB%9B%E6%80%84%E6%B0%94%E5%8F%88%E8%A8%80%E5%92%8C.zip",
       "sha256": "d69137ae943da86bde05b2ad463bac1cde57985933bfa8f93b8ee9f1c0c9828d",
       "archiveBytes": 11638255,
       "sourcePath": "works/yysun/宝黛怄气又言和.zip"
@@ -723,7 +815,7 @@
       "aiGenerated": true,
       "pageCount": 29,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/c851bf3f4048ab2a3ac2c53c9c38f86c13d0c0cf443e2052399be84e843f1b9b.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E5%AE%9D%E9%BB%9B%E8%AF%9D%E9%A6%99.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E5%AE%9D%E9%BB%9B%E8%AF%9D%E9%A6%99.zip",
       "sha256": "c851bf3f4048ab2a3ac2c53c9c38f86c13d0c0cf443e2052399be84e843f1b9b",
       "archiveBytes": 6617511,
       "sourcePath": "works/yysun/宝黛话香.zip"
@@ -759,11 +851,11 @@
       "aiGenerated": true,
       "pageCount": 53,
       "cover": "https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/d8a3deab53c12ec8b03e359cf8fb0c497d937912f9e08a33d44abc4400bffcf9.webp",
-      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/0f6d13d9876620a180f402d2b564bef6d746a957/works/yysun/%E6%9E%97%E9%BB%9B%E7%8E%89%E5%88%9D%E8%BF%9B%E8%B4%BE%E5%BA%9C.zip",
+      "archive": "https://raw.githubusercontent.com/yysun/awesome-shiqu/38c90dbf1c7aedac533de11a920637768e2475e9/works/yysun/%E6%9E%97%E9%BB%9B%E7%8E%89%E5%88%9D%E8%BF%9B%E8%B4%BE%E5%BA%9C.zip",
       "sha256": "d8a3deab53c12ec8b03e359cf8fb0c497d937912f9e08a33d44abc4400bffcf9",
       "archiveBytes": 15049481,
       "sourcePath": "works/yysun/林黛玉初进贾府.zip"
     }
   ],
-  "sourceCommit": "0f6d13d9876620a180f402d2b564bef6d746a957"
+  "sourceCommit": "38c90dbf1c7aedac533de11a920637768e2475e9"
 }
