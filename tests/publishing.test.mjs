@@ -73,13 +73,13 @@ test('imports a real-shaped UTF-8 export, publishes only selected fields, and bu
   assert.equal(catalog.schemaVersion, 1);
   const entry = catalog.stories[0];
   assert.equal('pages' in entry, false);
-  assert.equal(entry.cover, `stories/${manifest.id}/images/01.png`);
-  assert.equal(entry.url, `stories/${manifest.id}/story.json`);
+  assert.equal(entry.cover, `public/${manifest.id}/${entry.version}/images/01.png`);
+  assert.equal(entry.url, `public/${manifest.id}/${entry.version}/story.json`);
   const hostedRoot = new URL('https://yysun.github.io/awesome-shiqu/');
   const jsonUrl = new URL(entry.url, hostedRoot);
   assert.equal(new URL(manifest.pages[0].image, jsonUrl).pathname,
-    `/awesome-shiqu/stories/${manifest.id}/images/01.png`);
-  assert.deepEqual((await readdir(path.join(root, 'dist', 'stories', manifest.id))).sort(), ['images', 'story.json']);
+    `/awesome-shiqu/public/${manifest.id}/${entry.version}/images/01.png`);
+  assert.deepEqual((await readdir(path.dirname(path.join(root, 'dist', entry.url)))).sort(), ['images', 'story.json']);
   await assert.rejects(importStory(input, OPTIONS, root), /已存在/);
   assert.deepEqual(await readFile(path.join(root, 'stories', manifest.id, 'images', '01.png')), PNG);
 });
@@ -162,16 +162,17 @@ test('publishes SEO-friendly book and story pages with canonical URLs and a site
   const manifest = await importStory(input, OPTIONS, root);
   const summary = await build(root);
   assert.equal(summary.books, 1);
+  const entry = JSON.parse(await readFile(path.join(root, 'dist/catalog.json'), 'utf8')).stories[0];
   const storyPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', '螳螂捕蝉', 'index.html'), 'utf8');
   assert.match(storyPage, /<title>螳螂捕蝉 · 说苑·正谏 · 拾趣好故事<\/title>/);
   assert.equal(storyPage.includes(`<meta name="shiqu:story" content="${manifest.id}">`), true);
   assert.equal(storyPage.includes('href="../../../assets/site.css"'), true);
   const canonical = new URL('books/说苑-正谏/螳螂捕蝉/', 'https://yysun.github.io/awesome-shiqu/').href;
   assert.equal(storyPage.includes(`<link rel="canonical" href="${canonical}">`), true);
-  assert.equal(storyPage.includes(`<meta property="og:image" content="${new URL(`stories/${manifest.id}/images/01.png`, 'https://yysun.github.io/awesome-shiqu/').href}">`), true);
+  assert.equal(storyPage.includes(`<meta property="og:image" content="${new URL(entry.cover, 'https://yysun.github.io/awesome-shiqu/').href}">`), true);
   const bookPage = await readFile(path.join(root, 'dist', 'books', '说苑-正谏', 'index.html'), 'utf8');
   assert.equal(bookPage.includes('href="./螳螂捕蝉/"'), true);
-  assert.equal(bookPage.includes(`src="../../stories/${manifest.id}/images/01.png"`), true);
+  assert.equal(bookPage.includes(`src="../../${entry.cover}"`), true);
   assert.equal(bookPage.includes('<a class="nav-link active" href="../../books/" aria-current="page">书目</a>'), true);
   assert.equal(bookPage.includes('<nav class="breadcrumb" aria-label="位置"><a href="../../">首页</a><a href="../">书目</a><span aria-current="page">说苑·正谏</span></nav>'), true);
   assert.equal(bookPage.includes(`<a href="../../themes/${encodeURIComponent('聪明与糊涂')}/">`) || bookPage.includes('<a href="../../themes/聪明与糊涂/">'), true);
@@ -383,8 +384,8 @@ test('featured lists must reference catalogued works and switch the featured nav
   const summary = await build(root);
   assert.equal(summary.featured, 1);
   const catalog = JSON.parse(await readFile(path.join(root, 'dist', 'catalog.json'), 'utf8'));
-  assert.equal(catalog.stories.find(story => story.archive).sourcePath, 'works/alice/测试 故事.zip');
-  assert.equal(catalog.stories.find(story => story.url).sourcePath, undefined);
+  assert.equal(catalog.stories.find(story => story.sourcePath).sourcePath, 'works/alice/测试 故事.zip');
+  assert.equal(catalog.stories.find(story => !story.sourcePath).sourcePath, undefined);
   assert.deepEqual(JSON.parse(await readFile(path.join(root, 'dist', 'featured.json'), 'utf8')).stories[0].path, 'works/alice/测试 故事.zip');
   for (const file of ['books/index.html', 'collection/index.html', 'themes/index.html']) {
     const html = await readFile(path.join(root, 'dist', file), 'utf8');

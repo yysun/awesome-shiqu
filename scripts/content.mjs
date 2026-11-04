@@ -72,7 +72,8 @@ export function validateManifest(input, expectedId = input?.id) {
   onlyKeys(input, ['schemaVersion', 'id', 'title', 'hook', 'book', 'theme', 'artStyle', 'author',
     'publishedAt', 'source', 'adaptationNote', 'reflection', 'generationModels', 'storyboardModels', 'aiGenerated', 'pages', 'publication', 'contributor', 'sourceText', 'exportIdentity', 'aiDisclosure'], '作品清单');
   assert(input.schemaVersion === 1, '作品清单 schemaVersion 必须为 1。');
-  const id = validateSlug(input.id);
+  const id = input.id;
+  assert(typeof id === 'string' && /^[a-z0-9][a-z0-9-]{0,119}$/.test(id), '作品编号无效。');
   assert(id === expectedId, '作品清单 id 必须与文件夹名称相同。');
   onlyKeys(input.source, ['title', 'url'], '出处');
   const sourceTitle = text(input.source.title, '出处标题', 1000);

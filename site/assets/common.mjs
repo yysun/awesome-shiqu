@@ -1,3 +1,4 @@
+// Share catalogue routes, publication origins and local reading state across the static reader.
 import {loadCatalog} from './library.mjs';
 import {storyRoutes} from './story-url.mjs';
 export const ROOT = new URL('../', import.meta.url);
@@ -17,12 +18,14 @@ export function internalURL(path, base = ROOT) {
 export function externalURL(path) {
   try { const url = new URL(path); return /^https?:$/.test(url.protocol) && !url.username && !url.password ? url : null; } catch { return null; }
 }
-let routes = new Map();
+let routes = new Map(), publicationRoot = ROOT;
+export const publicationURL = path => new URL(path, publicationRoot);
+export const hasLocalStoryPages = () => publicationRoot.href === ROOT.href;
 export function storyRoute(id) { return routes.get(id) || null; }
 export function storyLink(id) {
   if (!validId(id)) throw Error('作品编号无效。');
   const route = routes.get(id);
-  if (route) return new URL(route.path, ROOT);
+  if (route && hasLocalStoryPages()) return new URL(route.path, ROOT);
   const url = new URL('reader.html', ROOT); url.searchParams.set('story', id); return url;
 }
 function state() {
@@ -63,7 +66,8 @@ export function bookmarkIcon() {
 let libraryPromise;
 export function libraryInfo() { return libraryPromise ??= loadCatalog(); }
 export async function catalog() {
-  const stories = (await libraryInfo()).stories;
+  const info = await libraryInfo(), stories = info.stories;
+  publicationRoot = new URL(info.publicationRoot || ROOT);
   routes = storyRoutes(stories);
   return stories;
 }

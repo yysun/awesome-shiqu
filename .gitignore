@@ -9,3 +9,6 @@ node_modules/
 !.openai/hosting.json
 
 !tests/fixtures/*.zip
+
+.previous-publication/
+.dist-build-*/

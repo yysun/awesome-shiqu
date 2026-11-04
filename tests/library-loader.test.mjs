@@ -10,6 +10,7 @@ const ROOT = new URL('https://reader.example/awesome-shiqu/');
 const GITHUB = { owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', directory: 'works', catalog: 'catalog/catalog.json' };
 const COMMIT = '1234567890abcdef1234567890abcdef12345678';
 const RAW = `https://raw.githubusercontent.com/${GITHUB.owner}/${GITHUB.repo}`;
+const PAGES = 'https://yysun.github.io/awesome-shiqu/';
 const API = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/catalog/catalog.json?ref=main`;
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3ioAAAAASUVORK5CYII=', 'base64');
 const SOURCE = '# 小故事\n\n从一幅画读起。\n\n出处：《测试古书》\n\n## 第 1 幅\n\n图片：图片/01.png\n\n### 旁白\n\n这是一段故事。\n\n### 画面提示词\n\nPRIVATE-IMAGE-PROMPT\n';
@@ -45,6 +46,10 @@ function entry(remote = true) {
     cover: remote ? `${RAW}/main/catalog/covers/alice--tiny.png` : 'catalog/covers/alice--tiny.png',
   };
 }
+function publishedEntry() {
+  const {archive, ...data} = entry(false), directory = `public/${data.id}/${SHA256}`;
+  return {...data, version: SHA256, cover: `${directory}/images/01.png`, url: `${directory}/story.json`};
+}
 const catalog = (...stories) => ({ schemaVersion: 1, stories });
 const jsonResponse = data => new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
 function fakeFetcher(routes) {
@@ -62,16 +67,16 @@ function fakeFetcher(routes) {
   };
 }
 
-test('remote catalogue is requested from the configured repository and archive URLs pin a Git commit', async () => {
-  const remoteCatalog = `${RAW}/main/catalog/catalog.json`;
+test('remote catalogue comes from the selected published Pages deployment with immutable resources', async () => {
+  const remoteCatalog = new URL('catalog.json', PAGES).href;
   const mock = fakeFetcher(new Map([
     [new URL('config.json', ROOT).href, jsonResponse({ github: GITHUB })],
-    [remoteCatalog, jsonResponse(catalog(entry()))],
+    [remoteCatalog, jsonResponse(catalog(publishedEntry()))],
   ]));
   const loaded = await loadCatalog({ root: ROOT, fetcher: mock.fetcher });
   assert.equal(loaded.source, 'github'); assert.equal(loaded.remoteUnavailable, false);
-  assert.equal(loaded.stories[0].archiveURL, `${RAW}/${COMMIT}/works/alice/tiny.zip`);
-  assert.equal(loaded.stories[0].coverURL, `${RAW}/main/catalog/covers/alice--tiny.png`);
+  assert.equal(loaded.stories[0].manifestURL, new URL(publishedEntry().url, PAGES).href);
+  assert.equal(loaded.stories[0].coverURL, new URL(publishedEntry().cover, PAGES).href);
   assert.deepEqual(mock.calls.map(call => call.url), [new URL('config.json', ROOT).href, remoteCatalog]);
   for (const { url, options } of mock.calls) {
     assert.equal(options.credentials, new URL(url).origin === ROOT.origin ? 'same-origin' : 'omit'); assert.ok(options.signal instanceof AbortSignal);
@@ -90,7 +95,7 @@ test('catalogue storyboard credits validate model names without guessing from ge
 test('remote storyboard credits load from the lightweight catalogue without downloading ZIPs', async () => {
   const mock = fakeFetcher(new Map([
     [new URL('config.json', ROOT).href, jsonResponse({ github: GITHUB })],
-    [`${RAW}/main/catalog/catalog.json`, jsonResponse(catalog({ ...entry(), storyboardModels: ['storyboard-model'] }))],
+    [new URL('catalog.json', PAGES).href, jsonResponse(catalog({ ...publishedEntry(), storyboardModels: ['storyboard-model'] }))],
   ]));
   const loaded = await loadCatalog({ root: ROOT, fetcher: mock.fetcher });
   assert.equal(loaded.source, 'github');
@@ -103,7 +108,7 @@ test('404 and network failures use the local published catalogue without losing 
   for (const failure of [new Response('Not found', { status: 404 }), new TypeError('Network unavailable')]) {
     const mock = fakeFetcher(new Map([
       [new URL('config.json', ROOT).href, jsonResponse({ github: GITHUB })],
-      [`${RAW}/main/catalog/catalog.json`, failure],
+      [new URL('catalog.json', PAGES).href, failure],
       [new URL('catalog.json', ROOT).href, jsonResponse(catalog(entry(false)))],
     ]));
     const loaded = await loadCatalog({ root: ROOT, fetcher: mock.fetcher });
@@ -113,18 +118,16 @@ test('404 and network failures use the local published catalogue without losing 
   }
 });
 
-test('a newly published GitHub catalogue can use the public Contents API when the raw URL is not ready', async () => {
+test('an unavailable publication falls back only to a complete local catalogue', async () => {
   const mock = fakeFetcher(new Map([
-    [new URL('config.json', ROOT).href, jsonResponse({ github: GITHUB })],
-    [`${RAW}/main/catalog/catalog.json`, new Response('Not found', { status: 404 })],
-    [API, jsonResponse(catalog(entry()))],
+    [new URL('config.json', ROOT).href, jsonResponse({github:GITHUB})],
+    [new URL('catalog.json', PAGES).href, new Response('', {status:404})],
+    [new URL('catalog.json', ROOT).href, jsonResponse(catalog(publishedEntry()))],
   ]));
-  const loaded = await loadCatalog({ root: ROOT, fetcher: mock.fetcher });
-  assert.equal(loaded.source, 'github'); assert.equal(loaded.remoteUnavailable, false);
-  assert.equal(loaded.stories[0].archiveURL, `${RAW}/${COMMIT}/works/alice/tiny.zip`);
+  const loaded = await loadCatalog({root:ROOT, fetcher:mock.fetcher});
+  assert.equal(loaded.source, 'local'); assert.equal(loaded.remoteUnavailable, true);
+  assert.equal(loaded.stories[0].manifestURL, new URL(publishedEntry().url, ROOT).href);
   assert.equal(mock.calls.length, 3);
-  assert.equal(mock.calls[2].options.credentials, 'omit');
-  assert.equal(mock.calls[2].options.headers.Accept, 'application/vnd.github.raw+json');
 });
 
 test('legacy missing configuration and explicitly local mode make no GitHub request', async () => {
@@ -203,12 +206,12 @@ test('a malformed remote catalogue falls back before fetching an unapproved arch
   assert.throws(() => validateCatalog(catalog(malicious), { root: ROOT, github: GITHUB }), /作品/);
   const mock = fakeFetcher(new Map([
     [new URL('config.json', ROOT).href, jsonResponse({ github: GITHUB })],
-    [`${RAW}/main/catalog/catalog.json`, jsonResponse(catalog(malicious))],
+    [new URL('catalog.json', PAGES).href, jsonResponse(catalog(malicious))],
     [new URL('catalog.json', ROOT).href, jsonResponse(catalog())],
   ]));
   const loaded = await loadCatalog({ root: ROOT, fetcher: mock.fetcher });
   assert.equal(loaded.source, 'local'); assert.equal(loaded.remoteUnavailable, true);
-  assert.equal(mock.calls.length, 4);
+  assert.equal(mock.calls.length, 3);
   assert.equal(mock.calls.some(call => call.url.startsWith('https://evil.example')), false);
 });
 

@@ -32,7 +32,7 @@ async function publishedDate(root, relative, stat) {
   return stat.mtime.toISOString().slice(0, 10);
 }
 
-export async function readArchiveLibrary(root, {retainArchive = true, retainCover = true} = {}) {
+export async function readArchiveLibrary(root, {retainArchive = true, retainCover = true, retainImages = false} = {}) {
   const works = path.join(root, 'works');
   let entries;
   try {
@@ -65,14 +65,14 @@ export async function readArchiveLibrary(root, {retainArchive = true, retainCove
       let parsed;
       try {
         parsed = await parseStoryArchive(archive, {id, author: contributor.name, publishedAt: await publishedDate(root, relativePath, stat)});
-      } catch (error) { throw new Error(`${relativePath}：${error.message}`); }
+      } catch (error) { throw new Error(`${relativePath}：ZIP 内容验证失败（结构、校验、图片或公开字段无效）。`); }
       const first = parsed.images.find(image => image.name === parsed.manifest.pages[0].image);
       assert(first, `${relativePath} 缺少封面。`);
       const sha256 = createHash('sha256').update(archive).digest('hex');
       stories.push({manifest: parsed.manifest, relativePath, sha256, archiveBytes: archive.length,
         coverName: `covers/${id}${path.extname(first.name)}`,
         coverExtension: path.extname(first.name),
-        ...(retainArchive ? {archive} : {}), ...(retainCover ? {cover: Uint8Array.from(first.bytes)} : {})});
+        ...(retainImages ? {images: parsed.images} : {}), ...(retainArchive ? {archive} : {}), ...(retainCover ? {cover: Uint8Array.from(first.bytes)} : {})});
     }
   }
   return stories.sort((a, b) => b.manifest.publishedAt.localeCompare(a.manifest.publishedAt) || a.manifest.id.localeCompare(b.manifest.id));

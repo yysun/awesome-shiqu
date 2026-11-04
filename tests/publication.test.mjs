@@ -48,10 +48,10 @@ test('actual import and static build retain bytes and keep original text out of 
  const archives=await readArchiveLibrary(root);assert.equal(archives[0].manifest.author,source.author);assert.equal(archives[0].manifest.contributor,'submitter');
  const summary=await build(root);assert.equal(summary.count,2);
  const catalog=JSON.parse(await readFile(path.join(root,'dist/catalog.json')));assert.ok(catalog.stories.every(s=>!Object.hasOwn(s,'sourceText')));assert.ok(catalog.stories.every(s=>s.author===source.author&&s.contributor==='submitter'));
- assert.deepEqual(await readFile(path.join(root,'dist/works/submitter/publication.zip')),bytes);assert.deepEqual(await readdir(path.join(root,'dist/works/submitter')),['publication.zip']);
- const manifest=JSON.parse(await readFile(path.join(root,'dist/stories/publication/story.json')));assert.equal(manifest.sourceText,source.sourceText);
- for(const [i,page] of manifest.pages.entries())assert.deepEqual(await readFile(path.join(root,'dist/stories/publication',page.image)),files.get(source.pages[i].image));
- const archiveEntry=catalog.stories.find(s=>s.archive);assert.equal(new URL(archiveEntry.archive,'https://example.org/project/').pathname,'/project/works/submitter/publication.zip');
+ await assert.rejects(readFile(path.join(root,'dist/works/submitter/publication.zip')),/ENOENT/);
+ const legacyEntry=catalog.stories.find(s=>s.id==='publication');const manifest=JSON.parse(await readFile(path.join(root,'dist',legacyEntry.url)));assert.equal(manifest.sourceText,source.sourceText);
+ for(const [i,page] of manifest.pages.entries())assert.deepEqual(await readFile(path.join(root,'dist',path.dirname(legacyEntry.url),page.image)),files.get(source.pages[i].image));
+ const archiveEntry=catalog.stories.find(s=>s.sourcePath);assert.equal(archiveEntry.sourcePath,'works/submitter/publication.zip');assert.equal(archiveEntry.sha256,hash(bytes));
  const tampered=Buffer.from(files.get(source.pages[0].image));tampered[tampered.length-5]^=1;await writeFile(path.join(root,'stories/publication/images/01.webp'),tampered);await assert.rejects(readLibrary(root),/SHA-256/);
 });
 test('valid-CRC metadata tampering fails final image SHA in browser and importer',async()=>{

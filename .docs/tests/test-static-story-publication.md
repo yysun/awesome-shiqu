@@ -1,0 +1,7 @@
+# Static story publication E2E
+
+1. Build the complete reviewed collection with Node 24. Serve dist under a project prefix. Open a canonical story in the in-app browser: title/first image/caption visible; switch multi/scroll, save, navigate next story and return; progress/favourites remain. Network contains HTTP images and manifests, no ZIP or story Blob image URLs.
+2. Inspect generated HTML without running JS: title, hook, all captions, ordered images with dimensions/lazy hints, disclosures/source/original text, canonical, social image and escaped CreativeWork match the public manifest. Resolve all relative URLs beneath project prefix.
+3. Open reader.html?story=<id>: reaches canonical story. Open reader.html?preview=1 and select a valid fixture ZIP: local preview displays without changing catalog/publication files.
+4. Build a synthetic 80-page ZIP near the existing 256 MiB expanded limit, with one image near 12 MiB (owner confirmed preserving existing limits), in a temporary workspace. Manifest and HTML enumerate all pages, first eager/remaining lazy; reader initialization fetches no image bytes, creates no Blob URLs and allocates no aggregate image buffer. Do not put fixture assets in works/stories/dist of this repository.
+5. Update one source ZIP in a temporary workspace and rebuild: new version directory, old version remains byte-identical, catalog/HTML reference only new version. Corrupt a ZIP and rebuild: failure leaves previous output unchanged. Remote manifest failure never requests another version or ZIP.

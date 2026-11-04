@@ -30,63 +30,87 @@ jobs:
       - run: pnpm test
       - run: pnpm validate
 
-  index:
-    name: Update the GitHub story catalogue
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: check
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      commit: ${{ steps.commit.outputs.commit }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          ref: ${{ github.sha }}
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-      - run: pnpm catalog
-      - name: Commit only generated catalogue files
-        id: commit
-        shell: bash
-        run: |
-          git add -- catalog/
-          if ! git diff --cached --quiet; then
-            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore: update story catalogue'
-            # A normal push cannot overwrite a newer user commit. If main moved,
-            # its queued workflow regenerates the index from that newer source.
-            git push origin HEAD:main
-          fi
-          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
   build:
     name: Build reading site
-    needs: [check, index]
-    if: always() && needs.check.result == 'success' && (needs.index.result == 'success' || needs.index.result == 'skipped')
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ needs.index.outputs.commit || github.sha }}
           persist-credentials: false
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+      - name: Restore immutable publication resources
+        shell: bash
+        run: |
+          set +e
+          git ls-remote --exit-code origin refs/heads/static-publication > /tmp/publication-ref
+          result=$?
+          set -e
+          if [ "$result" = 0 ]; then
+            git fetch --depth=1 origin static-publication
+            mkdir -p .previous-publication
+            if git cat-file -e FETCH_HEAD:public 2>/dev/null; then
+              git archive FETCH_HEAD public | tar -x -C .previous-publication
+            fi
+          elif [ "$result" != 2 ]; then
+            exit "$result"
+          fi
       - run: pnpm build
+        env:
+          SHIQU_PREVIOUS_PUBLICATION: .previous-publication
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          name: immutable-publication
+          path: dist
+          include-hidden-files: true
       - uses: actions/upload-pages-artifact@v4
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           path: dist
 
+  retain:
+    name: Retain immutable publication resources
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: immutable-publication
+          path: /tmp/publication
+      - name: Save a durable snapshot without source ZIPs
+        shell: bash
+        run: |
+          git fetch origin static-publication || {
+            test -z "$(git ls-remote origin refs/heads/static-publication)" || exit 1
+          }
+          if git show-ref --verify --quiet refs/remotes/origin/static-publication; then
+            git checkout --detach origin/static-publication
+          else
+            git checkout --orphan static-publication
+            git rm -rf .
+          fi
+          mkdir -p public
+          if [ -d /tmp/publication/public ]; then cp -R /tmp/publication/public/. public/; fi
+          touch .nojekyll
+          git add -- public/ .nojekyll
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore: retain immutable story publication'
+            git push origin HEAD:static-publication
+          fi
+
   deploy:
     name: Publish GitHub Pages
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, retain]
     runs-on: ubuntu-latest
     permissions:
       pages: write

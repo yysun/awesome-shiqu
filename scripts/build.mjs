@@ -5,9 +5,12 @@ import { copyFile, lstat, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFi
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { assert, LIMITS, makeCatalog, readLibrary } from './content.mjs';
-import { archiveCatalogEntry, mergeCatalogs, readArchiveLibrary } from './archive-library.mjs';
+import { mergeCatalogs, readArchiveLibrary } from './archive-library.mjs';
 import { FACETS, facetOf, facetRoutes, groupByBook, slugConflicts, storyRoutes } from '../site/assets/story-url.mjs';
 import { validateFeatured } from '../site/assets/featured.mjs';
+
+import {preparePublication, writePublication, retainPublications} from './static-publication.mjs';
+import {staticStoryHTML} from './story-html.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SEGMENT = /^[\p{L}\p{N}][\p{L}\p{N}-]{0,219}$/u;
@@ -313,7 +316,7 @@ async function copySite(source, destination, topLevel = true) {
   let bytes = 0;
   for (const entry of await readdir(source, { withFileTypes: true })) {
     if (entry.name.startsWith('.')) continue;
-    assert(!topLevel || !['stories', 'works', 'covers', 'books', 'themes', 'styles', 'featured', 'collection', 'sitemap.xml'].includes(entry.name), `site/${entry.name} 是作品构建保留路径。`);
+    assert(!topLevel || !['public', 'stories', 'works', 'covers', 'books', 'themes', 'styles', 'featured', 'collection', 'sitemap.xml'].includes(entry.name), `site/${entry.name} 是作品构建保留路径。`);
     assert(!entry.isSymbolicLink(), `site/ 不允许符号链接：${entry.name}`);
     const from = path.join(source, entry.name), to = path.join(destination, entry.name);
     if (entry.isDirectory()) {
@@ -369,7 +372,8 @@ export async function versionAssets(staging) {
 
 export async function build(root = ROOT) {
   const stories = await readLibrary(root);
-  const archives = await readArchiveLibrary(root);
+  const archives = await readArchiveLibrary(root, {retainArchive: false, retainCover: false, retainImages: true});
+  const publications = [...stories, ...archives].map(preparePublication);
   const destination = path.join(root, 'dist');
   try {
     const stat = await lstat(destination);
@@ -380,28 +384,14 @@ export async function build(root = ROOT) {
     let size = await copySite(path.join(root, 'site'), staging);
     assert((await lstat(path.join(staging, 'index.html'))).isFile(), 'site/index.html 不存在。');
     assert((await lstat(path.join(staging, 'reader.html'))).isFile(), 'site/reader.html 不存在。');
-    for (const { manifest, images } of stories) {
-      const storyDirectory = path.join(staging, 'stories', manifest.id);
-      await mkdir(path.join(storyDirectory, 'images'), { recursive: true });
-      const json = JSON.stringify(manifest, null, 2) + '\n';
-      size += Buffer.byteLength(json);
-      await writeFile(path.join(storyDirectory, 'story.json'), json);
-      for (const image of images) {
-        size += image.bytes.length;
-        assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB，请先压缩或移除大图。');
-        await writeFile(path.join(storyDirectory, image.name), image.bytes);
-      }
+    for (const publication of publications) {
+      size += await writePublication(staging, publication);
+      assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB。');
     }
-    for (const story of archives) {
-      for (const [relative, bytes] of [[story.relativePath, story.archive], [story.coverName, story.cover]]) {
-        size += bytes.length;
-        assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB，请先压缩或移除大图。');
-        const destinationFile = path.join(staging, relative);
-        await mkdir(path.dirname(destinationFile), { recursive: true });
-        await writeFile(destinationFile, bytes);
-      }
-    }
-    const catalog = mergeCatalogs(makeCatalog(stories), { stories: archives.map(archiveCatalogEntry) });
+    const retained = new Set(publications.map(item => item.directory));
+    size += await retainPublications(destination, staging, retained, LIMITS.siteBytes - size);
+    if (process.env.SHIQU_PREVIOUS_PUBLICATION) size += await retainPublications(path.resolve(process.env.SHIQU_PREVIOUS_PUBLICATION), staging, retained, LIMITS.siteBytes - size);
+    const catalog = mergeCatalogs({stories: publications.map(item => item.entry)});
     // SEO-friendly pages: books, categories, and one page per published story.
     let config = null;
     try { config = JSON.parse(await readFile(path.join(root, 'site', 'config.json'), 'utf8')); }
@@ -423,8 +413,11 @@ export async function build(root = ROOT) {
     for (const entry of catalog.stories) {
       const route = routes.get(entry.id);
       assert(route && SEGMENT.test(route.bookSlug) && SEGMENT.test(route.storySlug), `无法为作品生成页面路径：${entry.id}`);
-      await write(path.join('books', route.bookSlug, route.storySlug, 'index.html'), storyPageHTML(template, entry, route, base));
+      await write(path.join('books', route.bookSlug, route.storySlug, 'index.html'), staticStoryHTML(storyPageHTML(template, entry, route, base), publications.find(item => item.entry.id === entry.id).manifest, entry, route, routes, catalog.stories, base));
     }
+    const legacyLinks = catalog.stories.map(entry => `<li><a href="${escapeHTML(routes.get(entry.id).path)}">${escapeHTML(entry.title)}</a></li>`).join('');
+    size -= Buffer.byteLength(template);
+    await write('reader.html', template.replace('</head>', '<meta name="robots" content="noindex,follow">\n</head>').replace(/<noscript>.*?<\/noscript>/s, `<noscript><nav aria-label="故事目录"><ul>${legacyLinks}</ul></nav></noscript>`));
     for (const book of books.values()) {
       await write(path.join('books', book.slug, 'index.html'), bookPageHTML(book, { base, featured: hasFeatured, facets, books, routes }));
     }
@@ -449,15 +442,19 @@ export async function build(root = ROOT) {
     size += await versionAssets(staging);
     assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB，请先压缩或移除大图。');
     await writeFile(path.join(staging, '.nojekyll'), '');
-    await rm(destination, { recursive: true, force: true });
-    await rename(staging, destination);
+    const backup = staging + '-previous';
+    let moved = false;
+    try { await rename(destination, backup); moved = true; } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    try { await rename(staging, destination); }
+    catch (error) { if (moved) await rename(backup, destination); throw error; }
+    if (moved) await rm(backup, {recursive: true, force: true});
     return { count: catalog.stories.length, pages: catalog.stories.reduce((sum, story) => sum + story.pageCount, 0), books: books.size, themes: facets.theme.size, styles: facets.style.size, featured: featured.stories.length, bytes: size };
   } catch (error) { await rm(staging, { recursive: true, force: true }); throw error; }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   if (process.argv.includes('--help') || process.argv.includes('-h')) {
-    console.log('用法：pnpm build\n验证 works/<GitHub 用户名>/<作品编号>.zip，生成书架目录和封面，并原样复制 ZIP。\n兼容已有 stories/ 作品。空作品集可以正常构建。');
+    console.log('用法：pnpm build\n验证 works/<GitHub 用户名>/<作品编号>.zip，生成版本隔离的公开清单、原字节图片和完整故事页面；部署不包含 ZIP。\n兼容已有 stories/ 作品。空作品集可以正常构建。');
   } else {
     try {
       const result = await build();

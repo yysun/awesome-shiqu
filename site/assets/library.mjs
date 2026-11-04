@@ -1,4 +1,4 @@
-// Load lightweight catalogues and verified ZIPs only from the selected repository or site.
+// Load published versioned manifests and native HTTP artwork; retain ZIP parsing for explicit preview tools.
 import { parseStoryArchive, validateGenerationModels } from './story-archive.mjs';
 import { sha256Hex } from './sha256.mjs';
 import { ZIP_LIMITS } from './zip.mjs';
@@ -28,8 +28,9 @@ export function githubConfig(input) {
   check(cleanPath(value.branch) && cleanPath(value.directory) && cleanPath(value.catalog), '作品仓库的目录设置无效。');
   return { ...value };
 }
-function rawURL(github, ref, path) {
-  return new URL(`https://raw.githubusercontent.com/${encodeURIComponent(github.owner)}/${encodeURIComponent(github.repo)}/${encodeURIComponent(ref)}/${path.split('/').map(encodeURIComponent).join('/')}`);
+export function publishedRoot(github) {
+  const owner = github.owner.toLowerCase();
+  return new URL(github.repo.toLowerCase() === owner + '.github.io' ? `https://${owner}.github.io/` : `https://${owner}.github.io/${encodeURIComponent(github.repo)}/`);
 }
 
 function pathSegments(pathname) {
@@ -50,6 +51,14 @@ export function assetURL(value, { root = ROOT, github = null, archive = false } 
     if (archive) check(validArchivePath(relative), '作品 ZIP 必须位于投稿目录，且使用有效文件名。');
     else check(cleanPath(relative), '作品文件路径无效。');
     return url;
+  }
+  if (!archive && github) {
+    const published = publishedRoot(github);
+    if (url.origin === published.origin && url.pathname.startsWith(published.pathname)) {
+      const relative = pathSegments(url.pathname.slice(published.pathname.length)).join('/');
+      check(/^public\/[a-z0-9][a-z0-9-]{0,119}\/[a-f0-9]{64}\/(?:story\.json|images\/[a-zA-Z0-9][a-zA-Z0-9._-]*\.(?:png|jpe?g|webp))$/.test(relative) && !url.search, '公开作品路径无效。');
+      return url;
+    }
   }
   check(github && url.origin === 'https://raw.githubusercontent.com', '作品文件必须来自已设置的 GitHub 仓库。');
   const segments = pathSegments(url.pathname.slice(1));
@@ -115,14 +124,15 @@ export function validateCatalog(data, { root = ROOT, github = null } = {}) {
     const result = { ...story, coverURL: assetURL(story.cover, { root, github }).href };
     if (story.storyboardModels !== undefined) result.storyboardModels = validateGenerationModels(story.storyboardModels);
     if (story.sourcePath !== undefined) check(validArchivePath(story.sourcePath, github?.directory || 'works'), '作品来源路径无效。');
-    if (story.archive !== undefined) {
+    if (story.url !== undefined) {
+      const url = assetURL(story.url, {root, github});
+      const versioned = /^public\/[a-z0-9][a-z0-9-]{0,119}\/[a-f0-9]{64}\/story\.json$/.test(url.pathname.split('/').slice(-4).join('/'));
+      check(versioned ? url.pathname.endsWith(`/public/${story.id}/${story.version}/story.json`) && /^[a-f0-9]{64}$/.test(story.version) && result.coverURL.startsWith(new URL('./', url).href) : url.origin === root.origin && url.pathname.startsWith(new URL('stories/', root).pathname) && url.pathname.endsWith('/story.json'), '作品清单路径无效。');
+      result.manifestURL = url.href;
+    } else if (story.archive !== undefined) {
       check(typeof story.sha256 === 'string' && /^[0-9a-f]{64}$/.test(story.sha256) && Number.isSafeInteger(story.archiveBytes) && story.archiveBytes > 0 && story.archiveBytes <= MAX_ZIP_BYTES && typeof story.author === 'string' && story.author.length <= 120 && validDate(story.publishedAt), '作品 ZIP 的目录信息不完整。');
       result.archiveURL = assetURL(story.archive, { root, github, archive: true }).href;
-    } else {
-      const url = assetURL(story.url, { root });
-      check(url.pathname.startsWith(new URL('stories/', root).pathname) && url.pathname.endsWith('/story.json'), '作品清单路径无效。');
-      result.manifestURL = url.href;
-    }
+    } else throw Error('公开作品清单缺失。');
     return result;
   });
 }
@@ -132,19 +142,20 @@ export async function loadCatalog({ root = ROOT, fetcher = fetch } = {}) {
   catch { /* Older collections may have no remote configuration. */ }
   let remoteUnavailable = false;
   if (github && config.preferRemoteCatalog !== false) {
-    const api = new URL(`https://api.github.com/repos/${encodeURIComponent(github.owner)}/${encodeURIComponent(github.repo)}/contents/${github.catalog.split('/').map(encodeURIComponent).join('/')}`);
-    api.searchParams.set('ref', github.branch);
-    // A freshly created branch may not yet be available at the raw-content CDN.
-    // Use the public Contents API only if that normal, cacheable route fails.
-    for (const [url, headers] of [[rawURL(github, github.branch, github.catalog), {}], [api, { Accept: 'application/vnd.github.raw+json' }]]) {
-      try {
-        const data = await jsonFile(url, fetcher, MAX_CATALOG_BYTES, 6500, 'omit', headers);
-        return { stories: validateCatalog(data, { root, github }), github, source: 'github', remoteUnavailable: false };
-      } catch { remoteUnavailable = true; }
-    }
+    try {
+      const remoteRoot = publishedRoot(github);
+      const data = await jsonFile(new URL('catalog.json', remoteRoot), fetcher, MAX_CATALOG_BYTES, 6500);
+      // Resolve relative URLs at the selected publication, never at an independently deployed reader.
+      const absolute = {...data, stories: data.stories?.map(story => ({...story,
+        cover: new URL(story.cover, remoteRoot).href, url: story.url === undefined ? undefined : new URL(story.url, remoteRoot).href}))};
+      const stories = validateCatalog(absolute, {root, github});
+      check(stories.every(story => story.manifestURL && story.version), '远程作品尚未静态发布。');
+      return {stories, github, source: 'github', publicationRoot: remoteRoot.href, remoteUnavailable: false};
+    } catch { remoteUnavailable = true; }
+
   }
   const data = await jsonFile(new URL('catalog.json', root), fetcher, MAX_CATALOG_BYTES, 10000, 'same-origin');
-  return { stories: validateCatalog(data, { root, github }), github, source: 'local', remoteUnavailable };
+  return { stories: validateCatalog(data, { root, github }), github, source: 'local', publicationRoot: root.href, remoteUnavailable };
 }
 
 function createArtwork(prepared) {
@@ -198,6 +209,31 @@ export async function loadManifestArtwork(story, manifestURL, { fetcher = fetch,
     }
     return { story, imageURLs, dispose };
   } catch (error) { dispose(); throw error; }
+}
+// Fetch exactly one immutable manifest; images remain cacheable browser resources without JS buffers.
+export async function loadPublishedStory(entry, {fetcher = fetch} = {}) {
+  check(typeof entry.manifestURL === 'string', '公开作品清单缺失，请等待站点完成发布。');
+  const response = await fetcher(entry.manifestURL, {credentials: new URL(entry.manifestURL).origin === ROOT.origin ? 'same-origin' : 'omit', redirect: 'error', signal: AbortSignal.timeout(30000)});
+  check(response.ok, '故事暂时无法打开，请稍后重试。');
+  const story = await responseJSON(response, ZIP_LIMITS.markdownBytes * 2);
+  check(story.id === entry.id && story.pages?.length === entry.pageCount, '故事版本与目录不符。');
+  if (entry.version) {
+    const {version, ...content} = story;
+    const json = JSON.stringify(content).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
+    check(version === entry.version && await sha256Hex(new TextEncoder().encode(json)) === version, '故事版本与目录不符。');
+  }
+  return {story, ...publishedArtwork(story, entry.manifestURL)};
+}
+export function publishedArtwork(story, manifestURL) {
+  check(Array.isArray(story.pages) && story.pages.length >= 1 && story.pages.length <= ZIP_LIMITS.pages, '故事页数无效。');
+  const seen = new Set(), imageURLs = new Map(), root = new URL('./', manifestURL);
+  for (const page of story.pages) {
+    check(typeof page.image === 'string' && /^images\/[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g|webp)$/.test(page.image) && !seen.has(page.image.toLowerCase()), '画面文件路径无效。');
+    seen.add(page.image.toLowerCase()); pagePublicFields(page);
+    if (story.version) check(Number.isSafeInteger(page.width) && page.width > 0 && Number.isSafeInteger(page.height) && page.height > 0 && /^[a-f0-9]{64}$/.test(page.sha256), '公开画面信息不完整。');
+    imageURLs.set(page.image, new URL(page.image, root).href);
+  }
+  return {imageURLs, dispose() {}};
 }
 export async function loadLocalArchive(file) {
   check(file && /\.zip$/i.test(file.name) && file.size > 0 && file.size <= MAX_ZIP_BYTES, `请选择不超过 ${MAX_ZIP_BYTES / 1024 / 1024} MiB 的拾趣 ZIP 文件。`);

@@ -49,7 +49,7 @@ async function workspace(t) {
   return root;
 }
 
-test('a ZIP-only contribution builds an indexed cover and the unchanged original archive', async t => {
+test('a ZIP-only contribution publishes versioned original images without deploying its source archive', async t => {
   const root = await workspace(t), library = await readArchiveLibrary(root);
   assert.equal(library.length, 1);
   assert.equal(library[0].manifest.id, 'alice--test-story');
@@ -61,29 +61,29 @@ test('a ZIP-only contribution builds an indexed cover and the unchanged original
   const summary = await build(root);
   assert.equal(summary.count, 1); assert.equal(summary.pages, 2);
   const catalog = JSON.parse(await readFile(path.join(root, 'dist/catalog.json'), 'utf8')), story = catalog.stories[0];
-  assert.equal(story.archive, 'works/alice/test-story.zip');
-  assert.equal(story.cover, 'covers/alice--test-story.png');
+  assert.equal(story.archive, undefined); assert.equal(story.sourcePath, 'works/alice/test-story.zip');
+  assert.equal(story.cover, `public/${story.id}/${story.version}/images/01.png`);
   assert.equal(story.sha256, createHash('sha256').update(ARCHIVE).digest('hex'));
   assert.equal(story.archiveBytes, ARCHIVE.length);
-  assert.equal(story.url, undefined); assert.equal(story.pages, undefined);
+  assert.equal(story.url, `public/${story.id}/${story.version}/story.json`); assert.equal(story.pages, undefined);
   assert.equal(JSON.stringify(catalog).includes('PRIVATE-'), false);
-  assert.deepEqual(await readFile(path.join(root, 'dist', story.archive)), ARCHIVE);
+  await assert.rejects(readFile(path.join(root, 'dist', story.sourcePath)), /ENOENT/);
   assert.deepEqual(await readFile(path.join(root, 'dist', story.cover)), PNG);
-  assert.deepEqual(await readdir(path.join(root, 'dist/works/alice')), ['test-story.zip']);
+  await assert.rejects(readdir(path.join(root, 'dist/works')), /ENOENT/);
   const base = new URL('https://example.org/awesome-shiqu/');
-  assert.equal(new URL(story.archive, base).pathname, '/awesome-shiqu/works/alice/test-story.zip');
+  assert.equal(new URL(story.url, base).pathname, `/awesome-shiqu/public/${story.id}/${story.version}/story.json`);
 });
 
-test('the remote catalogue pins ZIPs to source commits and retains old hashed covers', async t => {
+test('the repository index points to versioned deployed resources and retains old publications', async t => {
   const root = await workspace(t), commit = 'a'.repeat(40);
   const catalog = await createRepositoryCatalog(root, {owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', commit});
   const story = catalog.stories[0];
   assert.equal(catalog.sourceCommit, commit);
-  assert.equal(story.archive, `https://raw.githubusercontent.com/yysun/awesome-shiqu/${commit}/works/alice/test-story.zip`);
+  assert.equal(story.archive, undefined); assert.equal(story.url, `https://yysun.github.io/awesome-shiqu/public/${story.id}/${story.version}/story.json`);
   assert.equal(story.sourcePath, 'works/alice/test-story.zip');
-  assert.equal(story.cover, `https://raw.githubusercontent.com/yysun/awesome-shiqu/main/catalog/covers/${story.sha256}.png`);
-  const oldCover = path.join(root, 'catalog/covers/old-cover.png');
-  await writeFile(oldCover, PNG);
+  assert.equal(story.cover, `https://yysun.github.io/awesome-shiqu/public/${story.id}/${story.version}/images/01.png`);
+  const oldCover = path.join(root, 'dist', new URL(story.cover).pathname.split('/awesome-shiqu/')[1]);
+
   await createRepositoryCatalog(root, {owner: 'yysun', repo: 'awesome-shiqu', branch: 'main', commit: 'b'.repeat(40)});
   assert.deepEqual(await readFile(oldCover), PNG);
   assert.equal(JSON.stringify(catalog).includes('PRIVATE-'), false);
@@ -128,12 +128,13 @@ test('JSON model names survive archive catalogues, legacy import, and static pub
     assert.deepEqual(story.storyboardModels, ['text-model']);
   }
   assert.equal(JSON.stringify(local).includes('PRIVATE-'), false);
-  const manifest = JSON.parse(await readFile(path.join(root, 'dist/stories/json-story/story.json'), 'utf8'));
+  const legacyEntry = local.stories.find(story => story.id === 'json-story');
+  const manifest = JSON.parse(await readFile(path.join(root, 'dist', legacyEntry.url), 'utf8'));
   assert.equal(manifest.hook, data.summary);
   assert.deepEqual(manifest.generationModels, ['text-model', 'image-model']);
   assert.deepEqual(manifest.storyboardModels, ['text-model']);
   assert.equal(JSON.stringify(manifest).includes('PRIVATE-'), false);
-  assert.deepEqual(await readFile(path.join(root, 'dist/works/alice/test-story.zip')), bytes);
+  await assert.rejects(readFile(path.join(root, 'dist/works/alice/test-story.zip')), /ENOENT/);
 });
 
 test('Shiqu export filenames keep Chinese, spaces and punctuation through build and reader URLs', async t => {
@@ -155,10 +156,10 @@ test('Shiqu export filenames keep Chinese, spaces and punctuation through build 
     const id = archiveStoryId('alice', name), relative = `works/alice/${name}`;
     assert.match(id, /^alice--zip-[a-f0-9]{24}$/);
     const localStory = localStories.find(story => story.id === id), remoteStory = remoteStories.find(story => story.id === id);
-    assert.equal(localStory.archiveURL, new URL(encodeArchivePath(relative), base).href);
-    assert.equal(remoteStory.archiveURL, `https://raw.githubusercontent.com/yysun/awesome-shiqu/${commit}/${encodeArchivePath(relative)}`);
+    assert.equal(localStory.manifestURL, new URL(localStory.url, base).href);
+    assert.equal(remoteStory.manifestURL, `https://yysun.github.io/awesome-shiqu/public/${id}/${remoteStory.version}/story.json`);
     assert.equal(remoteStory.sourcePath, relative);
-    assert.deepEqual(await readFile(path.join(root, 'dist', relative)), ARCHIVE);
+    await assert.rejects(readFile(path.join(root, 'dist', relative)), /ENOENT/);
     assert.equal(localStory.sha256, createHash('sha256').update(ARCHIVE).digest('hex'));
   }
   const updated = zip([['分镜.md', MARKDOWN.replace('测试故事', '更新后的故事')], ['图片/01.png', PNG], ['图片/02.png', PNG]]);
@@ -168,7 +169,7 @@ test('Shiqu export filenames keep Chinese, spaces and punctuation through build 
   assert.equal(changed.manifest.title, '更新后的故事');
 });
 
-test('the remote index refuses legacy-only readers, unsupported paths, and symlink outputs', async t => {
+test('the remote index accepts legacy stories and refuses unsupported paths and symlink outputs', async t => {
   const root = await workspace(t), options = {owner: 'yysun', repo: 'awesome-shiqu', commit: 'c'.repeat(40)};
   await writeFile(path.join(root, 'site/config.json'), JSON.stringify({github: {directory: 'other'}}));
   await assert.rejects(createRepositoryCatalog(root, options), /directory 必须/);
@@ -183,7 +184,7 @@ test('the remote index refuses legacy-only readers, unsupported paths, and symli
   assert.equal(await readFile(outside, 'utf8'), 'unchanged');
   await rm(path.join(root, 'catalog/catalog.json'));
   await importStory(path.join(root, 'works/alice/test-story.zip'), {slug: 'legacy', author: 'alice', date: '2026-11-01'}, root);
-  await assert.rejects(createRepositoryCatalog(root, options), /远程目录只支持/);
+  assert.equal((await createRepositoryCatalog(root, options)).stories.length, 2);
 });
 
 test('contribution paths reject ambiguous names, nested submissions, symlinks, and missing images', async t => {
@@ -201,7 +202,7 @@ test('contribution paths reject ambiguous names, nested submissions, symlinks, a
   await assert.rejects(readArchiveLibrary(root), /作品必须/);
   await rm(path.join(root, 'works/alice/link.zip'));
   await writeFile(path.join(root, 'works/alice/incomplete.zip'), zip([['分镜.md', MARKDOWN], ['图片/01.png', PNG]]));
-  await assert.rejects(readArchiveLibrary(root), /缺少第 2/);
+  await assert.rejects(readArchiveLibrary(root), /ZIP 内容验证失败/);
 });
 
 test('case and Unicode aliases cannot publish the same contribution twice', async t => {
