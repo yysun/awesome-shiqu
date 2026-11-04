@@ -2,6 +2,7 @@
 import {createHash} from 'node:crypto';
 import {lstat, mkdir, readdir, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
+import {MAX_PUBLIC_MANIFEST_BYTES} from '../site/assets/story-publication.mjs';
 import {assert, LIMITS, validateManifest, validateImageName, regularFile} from './content.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -66,7 +67,7 @@ export async function writePublication(staging, publication) {
   await mkdir(path.join(folder, 'images'), {recursive: true});
   let bytes = 0;
   for (const image of images) { await writeFile(path.join(folder, image.name), image.bytes); bytes += image.bytes.length; }
-  const json = publicJSON(manifest) + '\n'; await writeFile(path.join(folder, 'story.json'), json);
+  const json = publicJSON(manifest) + '\n'; assert(Buffer.byteLength(json) <= MAX_PUBLIC_MANIFEST_BYTES, '公开清单超过允许大小。'); await writeFile(path.join(folder, 'story.json'), json);
   return bytes + Buffer.byteLength(json);
 }
 
@@ -74,7 +75,9 @@ export async function writePublication(staging, publication) {
 export async function retainPublications(previous, staging, currentDirectories, maximum = LIMITS.siteBytes) {
   let ids; try { ids = await readdir(path.join(previous, 'public')); } catch (error) { if (error.code === 'ENOENT') return 0; throw error; }
   let size = 0;
+  const selectedIds = new Set([...currentDirectories].map(directory => directory.split('/')[1]));
   for (const id of ids) {
+    if (!selectedIds.has(id)) continue;
     assert(/^[a-z0-9][a-z0-9-]{0,119}$/.test(id), '保留作品编号无效。');
     const root = path.join(previous, 'public');
     const folder = path.join(root, id), stat = await lstat(folder);
@@ -84,7 +87,7 @@ export async function retainPublications(previous, staging, currentDirectories, 
       const directory = `public/${id}/${version}`;
       if (currentDirectories.has(directory)) continue;
       const from = path.join(folder, version);
-      const data = JSON.parse(await regularFile(path.join(from, 'story.json'), root, LIMITS.markdownBytes * 2));
+      const data = JSON.parse(await regularFile(path.join(from, 'story.json'), root, MAX_PUBLIC_MANIFEST_BYTES));
       const {version: declared, provenance, pages, ...metadata} = data;
       const clean = validateManifest({...metadata, pages: pages.map(({width, height, ...page}) => page)}, id);
       if (provenance) {

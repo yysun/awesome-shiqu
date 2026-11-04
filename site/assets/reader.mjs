@@ -85,7 +85,7 @@ function placeStory(route, bookName) {
     group.querySelector('.story-grid').replaceChildren(...list.map(entry => storyCard(entry, { saved })));
   };
   fill('#more-book', moreBook, `《${bookName}》更多`, bookURL, `全部 ${book?.stories.length || 0} 篇 →`);
-  fill('#more-theme', moreTheme, `同主题：${theme?.title || ''}`, theme ? new URL(theme.path, ROOT) : ROOT, theme ? `全部 ${theme.stories.length} 篇 →` : '');
+  fill('#more-theme', moreTheme, `同主题：${theme?.title || ''}`, theme ? publicationURL(theme.path) : ROOT, theme ? `全部 ${theme.stories.length} 篇 →` : '');
   $('#recommend').hidden = moreBook.length === 0 && moreTheme.length === 0;
 }
 async function share() {

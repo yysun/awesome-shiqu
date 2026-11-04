@@ -2,7 +2,7 @@
 import { parseStoryArchive, validateGenerationModels } from './story-archive.mjs';
 import { sha256Hex } from './sha256.mjs';
 import { ZIP_LIMITS } from './zip.mjs';
-import { pagePublicFields } from './story-publication.mjs';
+import { pagePublicFields, MAX_PUBLIC_MANIFEST_BYTES } from './story-publication.mjs';
 import { validArchivePath } from './archive-path.mjs';
 
 export const ROOT = new URL('../', import.meta.url);
@@ -215,7 +215,7 @@ export async function loadPublishedStory(entry, {fetcher = fetch} = {}) {
   check(typeof entry.manifestURL === 'string', '公开作品清单缺失，请等待站点完成发布。');
   const response = await fetcher(entry.manifestURL, {credentials: new URL(entry.manifestURL).origin === ROOT.origin ? 'same-origin' : 'omit', redirect: 'error', signal: AbortSignal.timeout(30000)});
   check(response.ok, '故事暂时无法打开，请稍后重试。');
-  const story = await responseJSON(response, ZIP_LIMITS.markdownBytes * 2);
+  const story = await responseJSON(response, MAX_PUBLIC_MANIFEST_BYTES);
   check(story.id === entry.id && story.pages?.length === entry.pageCount, '故事版本与目录不符。');
   if (entry.version) {
     const {version, ...content} = story;

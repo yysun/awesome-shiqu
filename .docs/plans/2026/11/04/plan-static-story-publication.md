@@ -16,7 +16,7 @@ Remote readers fetch the selected repository's GitHub Pages `catalog.json`, so c
 - [x] Switch normal reading to constrained static manifest/image URLs; preserve local ZIP preview, modes, progress, favourites and recommendations; reuse initial rendered version.
 - [x] Update remote catalogue source, catalogue command, CI retention and documentation.
 - [x] Add regression coverage for generation, failed-build preservation, updates/retention, remote version confinement, privacy, HTML SEO and large-story lazy loading.
-- [ ] Run Node 24 `pnpm test`, `pnpm build` and matching E2E scenarios on the complete collection.
+- [x] Run Node 24 `pnpm test`, `pnpm build` and matching E2E scenarios on the complete collection.
 
 ## Validation and risks
 
@@ -30,3 +30,21 @@ AR passed: no blocking architecture flaws.
 Owner clarification: keep existing limits; test both boundaries separately. Requirement and E2E scenario updated accordingly.
 
 Implementation evidence: Node 24.22.1/pnpm 11.25.0, 84 tests passed (including 255 MiB/80-page ZIP), complete collection build: 22 stories/808 images/209.56 MiB. Additional CI snapshot shell test passed against disposable local Git origin. Browser ET ongoing.
+
+Retention policy: only IDs still selected in works/stories retain old versions. Withdrawal removes all that ID’s public versions from the next deployment and current snapshot; Git history remains intact. Post-promotion backup cleanup is best effort and cannot report a completed release as failed. Shared 8 MiB public-manifest bound covers worst-case script-safe JSON escaping of the allowed public text.
+
+
+## Final verification
+
+Milestone dbdef5e: versioned publication implementation, source/loader/HTML/CI regression coverage; initial 84-test suite and full build passed. Review fixes form a second independently revertible milestone.
+
+CR risk: non-low — public resource integrity, privacy, remote loading and deployment retention.
+CR review round: 3; reviewer: reused (independent review agent).
+CR fixed: consistent manifest limits, safe post-promotion cleanup, withdrawal-aware retention, and correct remote book/theme navigation; rerun result passed.
+
+TT: Node 24.22.1, pnpm 11.25.0, `pnpm test`: 89/89 passed; `pnpm validate`: 22 stories/808 pages; `pnpm build`: 22 stories, 808 pages, 209.56 MiB. `git diff --check` passed.
+ET: in-app browser canonical and old query link, /awesome-shiqu project prefix, multi/scroll modes, favourites across navigation, persisted/resumed progress, complete story with scripts disabled, local ZIP fixture preview, HTTP-only online images, and cache hits on a cacheable static test host passed. Initial browser load fetched only 9/44 story images (native lazy threshold is browser-controlled). Local preview retains Blob URLs and has disabled save/share; online reader uses no ZIP requests or story Blob URLs. See matching E2E spec evidence.
+
+Delivery scope: local implementation and verification. Workflow snapshot save/restore exercised against a disposable local Git origin; live Actions/Pages deployment is not executed by this task. Chinese route names retained by owner preference; encoded canonical/sitemap serialization remains unchanged.
+
+Review-fix milestone: 80dcfb2. Final independent VR: all 19 acceptance criteria evidenced; every task complete. `VR passed: all acceptance criteria complete`. Full verdict and criterion matrix recorded verbatim in completion document.

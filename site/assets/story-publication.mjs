@@ -1,4 +1,6 @@
 // Validate only public attribution and tracing records; these declarations do not establish ownership.
+// Accommodate script-safe JSON expansion of the bounded source text, captions and model-name arrays.
+export const MAX_PUBLIC_MANIFEST_BYTES = 8 * 1024 * 1024;
 function check(ok,message){if(!ok)throw Error(message);}
 export function publicText(value,label,max,empty=true){check(typeof value==='string'&&value.length<=max&&!value.includes('\0')&&(empty||value.trim()),`${label}为空或超过长度限制。`);return value.trim();}
 export function publicURL(value){const input=publicText(value,'作品链接',1000);if(!input)return '';let url;try{url=new URL(input);}catch{throw Error('作品链接必须是完整的 http 或 https 链接。');}check(['http:','https:'].includes(url.protocol)&&!url.username&&!url.password,'作品链接只允许 http 或 https，不能包含登录凭据。');return url.href;}

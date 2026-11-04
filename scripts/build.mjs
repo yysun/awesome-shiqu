@@ -447,7 +447,8 @@ export async function build(root = ROOT) {
     try { await rename(destination, backup); moved = true; } catch (error) { if (error.code !== 'ENOENT') throw error; }
     try { await rename(staging, destination); }
     catch (error) { if (moved) await rename(backup, destination); throw error; }
-    if (moved) await rm(backup, {recursive: true, force: true});
+    // Promotion is complete; cleanup failure must not turn a successful release into a failed build.
+    if (moved) await rm(backup, {recursive: true, force: true}).catch(() => console.warn('站点已生成，但旧输出备份未能清理。'));
     return { count: catalog.stories.length, pages: catalog.stories.reduce((sum, story) => sum + story.pageCount, 0), books: books.size, themes: facets.theme.size, styles: facets.style.size, featured: featured.stories.length, bytes: size };
   } catch (error) { await rm(staging, { recursive: true, force: true }); throw error; }
 }

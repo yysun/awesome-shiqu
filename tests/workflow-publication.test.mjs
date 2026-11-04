@@ -30,5 +30,8 @@ test('CI saves only public resources on a separate branch, restores historical v
   assert.equal((await git('show','main:source.zip')).stdout,'SOURCE-PRIVATE');
   await git('checkout','main');await run('bash',['-e','-o','pipefail','-c',script('Restore immutable publication resources')],{cwd:repo});
   assert.equal(await readFile(path.join(repo,'.previous-publication/public/id/version/story.json'),'utf8'),'version-one');
+  await git('checkout','main');await rm(path.join(artifact,'public'),{recursive:true});await mkdir(path.join(artifact,'public'));
+  await run('bash',['-e','-o','pipefail','-c',save],{cwd:repo});
+  assert.deepEqual((await git('ls-tree','-r','--name-only','HEAD')).stdout.trim().split('\n'),['.nojekyll']);
   assert.ok(workflow.includes('needs: [build, retain]'));assert.ok(workflow.includes('path: /tmp/publication\n'));assert.ok(!workflow.includes('git push origin HEAD:main'));
 });

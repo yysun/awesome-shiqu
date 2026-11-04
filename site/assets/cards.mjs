@@ -1,6 +1,6 @@
 // Shared catalogue cards: story cards with bookmarks and progress, group cards, and facet chips.
 // Every title, hook, and note is rendered as text because story metadata is untrusted.
-import {ROOT, storyLink, savedStories, toggleSaved, progressFor, node, bookmarkIcon, toast} from './common.mjs';
+import {publicationURL, storyLink, savedStories, toggleSaved, progressFor, node, bookmarkIcon, toast} from './common.mjs';
 
 export function storyCard(story, {saved = savedStories(), label = story.book || story.source?.title || '', note = '', onChange} = {}) {
   const article = node('article', 'story-card');
@@ -33,7 +33,7 @@ export function storyCard(story, {saved = savedStories(), label = story.book || 
 
 export function groupCard({path, title, count, cover, hook, action = '查看故事 →'}) {
   const article = node('article', 'story-card group-card');
-  const link = node('a', 'card-link'); link.href = new URL(path, ROOT);
+  const link = node('a', 'card-link'); link.href = publicationURL(path);
   if (cover) {
     const wrap = node('div', 'cover-wrap');
     const image = node('img'); image.src = cover; image.alt = title + '封面'; image.loading = 'lazy'; image.decoding = 'async';
@@ -47,7 +47,7 @@ export function groupCard({path, title, count, cover, hook, action = '查看故�
 export function facetChips(items, label) {
   const list = node('ul', 'facet-chips'); list.setAttribute('aria-label', label);
   for (const item of items) {
-    const link = node('a'); link.href = new URL(item.path, ROOT);
+    const link = node('a'); link.href = publicationURL(item.path);
     if (item.kicker) link.append(node('span', 'chip-kicker', item.kicker));
     link.append(document.createTextNode(item.title), node('span', 'count', `${item.count} 篇`));
     const entry = node('li'); entry.append(link); list.append(entry);
