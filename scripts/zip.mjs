@@ -1,8 +1,9 @@
 // Read bounded ZIP entries in memory for imports; never extract archive paths to disk.
-import {inflateRawSync} from 'node:zlib';
-import {assert, LIMITS, safeArchivePath} from './content.mjs';
+import { inflateRawSync } from 'node:zlib';
+import { assert, LIMITS, safeArchivePath } from './content.mjs';
+import { zipEntryLimit } from '../site/assets/zip.mjs';
 
-const table = Uint32Array.from({length: 256}, (_, i) => {
+const table = Uint32Array.from({ length: 256 }, (_, i) => {
   let value = i;
   for (let bit = 0; bit < 8; bit++) value = value & 1 ? 0xedb88320 ^ value >>> 1 : value >>> 1;
   return value >>> 0;
@@ -12,7 +13,7 @@ export function crc32(bytes) {
   for (const byte of bytes) crc = table[(crc ^ byte) & 255] ^ crc >>> 8;
   return (crc ^ 0xffffffff) >>> 0;
 }
-const decoder = new TextDecoder('utf-8', {fatal: true});
+const decoder = new TextDecoder('utf-8', { fatal: true });
 function filename(bytes) {
   try { return safeArchivePath(decoder.decode(bytes)); }
   catch (error) { throw new Error(`ZIP 文件名无效：${error.message}`); }
@@ -24,7 +25,7 @@ function bounds(bytes, offset, count) {
 // Read only STORE/DEFLATE archives in memory. Never extract archive paths to disk.
 export function readZip(bytes) {
   assert(Buffer.isBuffer(bytes) && bytes.length >= 22 && bytes.length <= LIMITS.archiveBytes,
-    'ZIP 为空、损坏或超过 256 MiB。');
+    `ZIP 为空、损坏或超过 ${LIMITS.archiveBytes / 1024 / 1024} MiB。`);
   let end = -1;
   for (let offset = bytes.length - 22; offset >= Math.max(0, bytes.length - 65557); offset--) {
     if (bytes.readUInt32LE(offset) === 0x06054b50 && offset + 22 + bytes.readUInt16LE(offset + 20) === bytes.length) {
@@ -58,9 +59,9 @@ export function readZip(bytes) {
     const normalized = name.replace(/\/$/, '').normalize('NFC').toLowerCase();
     assert(!names.has(normalized), `ZIP 中存在重复或大小写冲突的文件：${name}`);
     names.add(normalized);
-    assert(expanded <= (name === '分镜.md' || name === '故事.json' ? LIMITS.markdownBytes : LIMITS.imageBytes), `ZIP 文件过大：${name}`);
+    assert(expanded <= zipEntryLimit(name), `ZIP 文件过大：${name}`);
     total += expanded;
-    assert(total <= LIMITS.archiveBytes, 'ZIP 解压后的总大小超过 256 MiB。');
+    assert(total <= LIMITS.expandedBytes, `ZIP 解压后的总大小超过 ${LIMITS.expandedBytes / 1024 / 1024} MiB。`);
     bounds(bytes, local, 30);
     assert(local < start && bytes.readUInt32LE(local) === 0x04034b50, 'ZIP 本地文件头损坏。');
     assert(bytes.readUInt16LE(local + 6) === flags && bytes.readUInt16LE(local + 8) === method, 'ZIP 文件头与目录不一致。');
@@ -74,7 +75,7 @@ export function readZip(bytes) {
     for (const [a, b] of ranges) assert(dataEnd <= a || local >= b, 'ZIP 文件数据相互重叠。');
     ranges.push([local, dataEnd]);
     assert(!name.endsWith('/') || expanded === 0, 'ZIP 文件夹不能包含数据。');
-    records.push({name, method, crc, compressed, expanded, dataStart, dataEnd});
+    records.push({ name, method, crc, compressed, expanded, dataStart, dataEnd });
     cursor += 46 + nameLength + extraLength + commentLength;
   }
   assert(cursor === end, 'ZIP 目录条目数量不一致。');
@@ -83,7 +84,7 @@ export function readZip(bytes) {
     let data = bytes.subarray(record.dataStart, record.dataEnd);
     if (record.method === 0) assert(record.compressed === record.expanded, '未压缩 ZIP 条目的大小不一致。');
     else {
-      try { data = inflateRawSync(data, {maxOutputLength: record.expanded + 1}); }
+      try { data = inflateRawSync(data, { maxOutputLength: record.expanded + 1 }); }
       catch { throw new Error(`ZIP 压缩数据损坏或超过声明大小：${record.name}`); }
     }
     assert(data.length === record.expanded && crc32(data) === record.crc, `ZIP 校验失败：${record.name}`);

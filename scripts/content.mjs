@@ -1,16 +1,18 @@
 // Validate allowlisted public manifests and confine all published files to the story directory.
-import {createHash} from 'node:crypto';
-import {publicationFields,pagePublicFields,validateAI} from '../site/assets/story-publication.mjs';
-import {lstat, readFile, readdir, realpath} from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { publicationFields, pagePublicFields, validateAI } from '../site/assets/story-publication.mjs';
+import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import {validateGenerationModels} from '../site/assets/story-archive.mjs';
+import { validateGenerationModels } from '../site/assets/story-archive.mjs';
+import { ZIP_LIMITS } from '../site/assets/zip.mjs';
 
 export const LIMITS = Object.freeze({
-  archiveBytes: 256 * 1024 * 1024,
-  imageBytes: 12 * 1024 * 1024,
-  markdownBytes: 1024 * 1024,
-  entries: 200,
-  pages: 80,
+  archiveBytes: ZIP_LIMITS.archiveBytes,
+  expandedBytes: ZIP_LIMITS.expandedBytes,
+  imageBytes: ZIP_LIMITS.imageBytes,
+  markdownBytes: ZIP_LIMITS.markdownBytes,
+  entries: ZIP_LIMITS.entries,
+  pages: ZIP_LIMITS.pages,
   siteBytes: 950 * 1024 * 1024,
 });
 
@@ -68,7 +70,7 @@ function onlyKeys(value, permitted, name) {
 
 export function validateManifest(input, expectedId = input?.id) {
   onlyKeys(input, ['schemaVersion', 'id', 'title', 'hook', 'book', 'theme', 'artStyle', 'author',
-    'publishedAt', 'source', 'adaptationNote', 'reflection', 'generationModels', 'storyboardModels', 'aiGenerated', 'pages', 'publication','contributor','sourceText','exportIdentity','aiDisclosure'], '作品清单');
+    'publishedAt', 'source', 'adaptationNote', 'reflection', 'generationModels', 'storyboardModels', 'aiGenerated', 'pages', 'publication', 'contributor', 'sourceText', 'exportIdentity', 'aiDisclosure'], '作品清单');
   assert(input.schemaVersion === 1, '作品清单 schemaVersion 必须为 1。');
   const id = validateSlug(input.id);
   assert(id === expectedId, '作品清单 id 必须与文件夹名称相同。');
@@ -81,13 +83,13 @@ export function validateManifest(input, expectedId = input?.id) {
     `每篇作品需要 1–${LIMITS.pages} 幅画面。`);
   const paths = new Set();
   const pages = input.pages.map((page, index) => {
-    onlyKeys(page, ['image', 'caption','sha256','originalSha256','imagePayloadSha256','watermark'], `第 ${index + 1} 幅`);
+    onlyKeys(page, ['image', 'caption', 'sha256', 'originalSha256', 'imagePayloadSha256', 'watermark'], `第 ${index + 1} 幅`);
     assert(typeof page.image === 'string' && /^images\/[a-zA-Z0-9][a-zA-Z0-9._-]*\.(png|jpe?g|webp)$/.test(page.image),
       `第 ${index + 1} 幅图片必须位于本作品 images/ 下，使用 PNG、JPEG 或 WebP。`);
     const key = page.image.toLowerCase();
     assert(!paths.has(key), '作品清单含有重复图片路径。');
     paths.add(key);
-    return {...pagePublicFields(page),image: page.image, caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000)};
+    return { ...pagePublicFields(page), image: page.image, caption: text(page.caption, `第 ${index + 1} 幅旁白`, 3000) };
   });
   return {
     ...publicationFields(input),
@@ -97,13 +99,13 @@ export function validateManifest(input, expectedId = input?.id) {
     book: text(input.book, '书名', 1000),
     theme: text(input.theme ?? '', '主题', 1000, true),
     artStyle: text(input.artStyle ?? '', '画风', 200, true),
-    author: text(input.author, '署名', 120,true),
+    author: text(input.author, '署名', 120, true),
     publishedAt: validateDate(input.publishedAt),
-    source: {title: sourceTitle, ...(sourceUrl ? {url: sourceUrl} : {})},
+    source: { title: sourceTitle, ...(sourceUrl ? { url: sourceUrl } : {}) },
     adaptationNote: text(input.adaptationNote ?? '', '改编说明', 6000, true),
     reflection: text(input.reflection ?? '', '结语', 3000, true),
-    ...(input.generationModels === undefined ? {} : {generationModels: validateGenerationModels(input.generationModels)}),
-    ...(input.storyboardModels === undefined ? {} : {storyboardModels: validateGenerationModels(input.storyboardModels)}),
+    ...(input.generationModels === undefined ? {} : { generationModels: validateGenerationModels(input.generationModels) }),
+    ...(input.storyboardModels === undefined ? {} : { storyboardModels: validateGenerationModels(input.storyboardModels) }),
     aiGenerated: input.aiGenerated, pages,
   };
 }
@@ -154,13 +156,13 @@ export async function regularFile(filename, root, maximum = Infinity) {
   return readFile(filename);
 }
 
-export async function readLibrary(root, {retainImages = true} = {}) {
+export async function readLibrary(root, { retainImages = true } = {}) {
   const storiesRoot = path.join(root, 'stories');
   let entries;
   try {
     const stat = await lstat(storiesRoot);
     assert(stat.isDirectory() && !stat.isSymbolicLink(), 'stories 必须是真实文件夹。');
-    entries = await readdir(storiesRoot, {withFileTypes: true});
+    entries = await readdir(storiesRoot, { withFileTypes: true });
   } catch (error) {
     if (error.code === 'ENOENT') return [];
     throw error;
@@ -186,11 +188,11 @@ export async function readLibrary(root, {retainImages = true} = {}) {
         assert(totalBytes <= LIMITS.siteBytes, '作品图片总量超过 950 MiB，请先压缩或移除大图。');
         bytes = await regularFile(path.join(directory, page.image), directory, LIMITS.imageBytes);
         validateImageName(bytes, page.image);
-        assert(!page.sha256||createHash('sha256').update(bytes).digest('hex')===page.sha256,'图片 SHA-256 与声明不符。');
+        assert(!page.sha256 || createHash('sha256').update(bytes).digest('hex') === page.sha256, '图片 SHA-256 与声明不符。');
       } catch (error) { throw new Error(`${entry.name}/${page.image}：${error.message}`); }
-      if (retainImages) images.push({name: page.image, bytes});
+      if (retainImages) images.push({ name: page.image, bytes });
     }
-    stories.push({manifest, images});
+    stories.push({ manifest, images });
   }
   return stories.sort((a, b) => b.manifest.publishedAt.localeCompare(a.manifest.publishedAt) || a.manifest.id.localeCompare(b.manifest.id));
 }
@@ -198,10 +200,12 @@ export async function readLibrary(root, {retainImages = true} = {}) {
 export function makeCatalog(stories) {
   return {
     schemaVersion: 1,
-    stories: stories.map(({manifest}) => {
-      const {pages, sourceText: _sourceText, ...metadata} = manifest;
-      return {...metadata, pageCount: pages.length, cover: `stories/${manifest.id}/${pages[0].image}`,
-        url: `stories/${manifest.id}/story.json`};
+    stories: stories.map(({ manifest }) => {
+      const { pages, sourceText: _sourceText, ...metadata } = manifest;
+      return {
+        ...metadata, pageCount: pages.length, cover: `stories/${manifest.id}/${pages[0].image}`,
+        url: `stories/${manifest.id}/story.json`
+      };
     }),
   };
 }

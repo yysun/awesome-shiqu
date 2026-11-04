@@ -1,10 +1,11 @@
 // Render untrusted story prose as text and retain reading progress across grid and scroll layouts.
 import { ROOT, validId, catalog, internalURL, externalURL, storyLink, storyRoute, savedStories, toggleSaved, progressFor, saveProgress, node, toast } from './common.mjs';
-import {facetOf, facetRoutes, groupByBook, storyRoutes} from './story-url.mjs';
-import {storyCard} from './cards.mjs';
-import {loadArchive, loadLocalArchive, loadManifestArtwork} from './library.mjs';
-import {publicationFields,pagePublicFields,publicText,validateAI,publicURL} from './story-publication.mjs';
-import {validateGenerationModels} from './story-archive.mjs';
+import { facetOf, facetRoutes, groupByBook, storyRoutes } from './story-url.mjs';
+import { storyCard } from './cards.mjs';
+import { loadArchive, loadLocalArchive, loadManifestArtwork, responseJSON } from './library.mjs';
+import { publicationFields, pagePublicFields, publicText, validateAI, publicURL } from './story-publication.mjs';
+import { validateGenerationModels } from './story-archive.mjs';
+import { ZIP_LIMITS } from './zip.mjs';
 const $ = selector => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
 const id = params.get('story') || document.querySelector('meta[name="shiqu:story"]')?.content || null;
@@ -27,7 +28,7 @@ function setMode(nextMode) {
   const retained = current; mode = nextMode;
   $('#story-viewer').classList.toggle('scroll-mode', mode === 'scroll');
   $('#story-viewer').setAttribute('aria-label', mode === 'scroll' ? '连续阅读故事画页' : '多页阅读，全部故事画页');
-  for (const name of ['multi','scroll']) { const button = $('#mode-' + name); button.classList.toggle('active', mode === name); button.setAttribute('aria-pressed', String(mode === name)); }
+  for (const name of ['multi', 'scroll']) { const button = $('#mode-' + name); button.classList.toggle('active', mode === name); button.setAttribute('aria-pressed', String(mode === name)); }
   requestAnimationFrame(() => goTo(retained, 'auto'));
 }
 function saveButton() {
@@ -82,7 +83,7 @@ function placeStory(route, bookName) {
   const fill = (id, list, title, href, linkText) => {
     const group = $(id); group.hidden = list.length === 0; if (!list.length) return;
     group.querySelector('h2').textContent = title; group.querySelector('.text-link').href = href; group.querySelector('.text-link').textContent = linkText;
-    group.querySelector('.story-grid').replaceChildren(...list.map(entry => storyCard(entry, {saved})));
+    group.querySelector('.story-grid').replaceChildren(...list.map(entry => storyCard(entry, { saved })));
   };
   fill('#more-book', moreBook, `《${bookName}》更多`, bookURL, `全部 ${book?.stories.length || 0} 篇 →`);
   fill('#more-theme', moreTheme, `同主题：${theme?.title || ''}`, theme ? new URL(theme.path, ROOT) : ROOT, theme ? `全部 ${theme.stories.length} 篇 →` : '');
@@ -128,20 +129,22 @@ try {
     if (!entry) throw Error('这篇故事尚未收录，或已从作品集中移除。');
     if (entry.archiveURL) {
       $('#reader-status').textContent = '正在下载故事 ZIP…';
-      artwork = await loadArchive(entry, {onProgress(bytes, total) {
-        $('#reader-status').textContent = total ? `正在下载故事 ZIP · ${Math.min(100, Math.round(bytes / total * 100))}%` : `正在下载故事 ZIP · ${(bytes / 1024 / 1024).toFixed(1)} MiB`;
-      }});
+      artwork = await loadArchive(entry, {
+        onProgress(bytes, total) {
+          $('#reader-status').textContent = total ? `正在下载故事 ZIP · ${Math.min(100, Math.round(bytes / total * 100))}%` : `正在下载故事 ZIP · ${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+        }
+      });
       story = artwork.story; imageURLs = artwork.imageURLs;
     } else {
       manifestURL = internalURL(entry.manifestURL);
-      const response = await fetch(manifestURL, {cache: 'no-cache'});
+      const response = await fetch(manifestURL, { cache: 'no-cache' });
       if (!response.ok) throw Error('故事暂时无法打开，请稍后重试。');
-      story = await response.json();
+      story = await responseJSON(response, ZIP_LIMITS.markdownBytes);
     }
     if (story.schemaVersion !== 1 || story.id !== id || typeof story.title !== 'string' || !Array.isArray(story.pages) || story.pages.length !== entry.pageCount || story.pages.some(page => typeof page.image !== 'string' || typeof page.caption !== 'string')) throw Error('故事内容不完整，请联系作品维护者。');
   }
-  story={...story,...publicationFields(story),author:publicText(story.author??'','制作署名',120),aiGenerated:validateAI(story.aiGenerated),pages:story.pages.map(page=>({...page,...pagePublicFields(page)}))};
-  if(!artwork&&story.pages.some(page=>page.sha256)){artwork=await loadManifestArtwork(story,manifestURL,{onProgress:message=>{$('#reader-status').textContent=message;}});imageURLs=artwork.imageURLs;}
+  story = { ...story, ...publicationFields(story), author: publicText(story.author ?? '', '制作署名', 120), aiGenerated: validateAI(story.aiGenerated), pages: story.pages.map(page => ({ ...page, ...pagePublicFields(page) })) };
+  if (!artwork && story.pages.some(page => page.sha256)) { artwork = await loadManifestArtwork(story, manifestURL, { onProgress: message => { $('#reader-status').textContent = message; } }); imageURLs = artwork.imageURLs; }
   if (artwork) window.addEventListener('pagehide', event => { if (!event.persisted) artwork.dispose(); });
   document.title = story.title + ' · 拾趣好故事';
   $('meta[name="description"]').content = story.hook || story.title;
@@ -154,18 +157,18 @@ try {
   $('#story-hook').textContent = story.hook || '';
   const models = validateGenerationModels(story.generationModels);
   const modelCredit = models.length ? `模型：${models.join(' / ')}` : '';
-  $('#story-credit').textContent = [story.author||'未署名', story.artStyle, `${story.pages.length} 幅`, modelCredit].filter(Boolean).join(' · ');
+  $('#story-credit').textContent = [story.author || '未署名', story.artStyle, `${story.pages.length} 幅`, modelCredit].filter(Boolean).join(' · ');
   $('#story-reflection').textContent = story.reflection || '故事有了结尾，留给我们的思考还在继续。';
   $('#author-detail').textContent = story.author || '未署名';
-  $('#ai-detail').textContent = story.aiDisclosure || (story.aiGenerated===true?'本作品包含 AI 生成的画面或改编文字。原作出处与改编内容分别注明。':story.aiGenerated===false?'提交声明未使用 AI；此声明未经本站独立认证。':'创作方式未注明，AI 参与情况请向制作人核实。');
-  const p=story.publication||{};
-  const optional=(name,value)=>{ $('#'+name+'-detail').textContent=value||'';$('#'+name+'-detail').hidden=!value;$('#'+name+'-label').hidden=!value;};
-  optional('contributor',story.contributor);optional('contact',p.contact);optional('license',p.sourceNote);
-  $('#reuse-detail').textContent=p.reuse||'未提供额外转载授权；请核对来源许可，必要时联系相应权利人。';
-  const workURL=p.workUrl?publicURL(p.workUrl):'';
-  if(workURL){const a=node('a','','查看公开作品');a.href=workURL;a.target='_blank';a.rel='noopener noreferrer';$('#work-detail').replaceChildren(a);}else{$('#work-label').hidden=true;$('#work-detail').hidden=true;}
-  optional('identity',story.exportIdentity?`${story.exportIdentity.storyId} · 版本 ${story.exportIdentity.revision}`:'');
-  $('#original-notes').hidden=!story.sourceText;$('#original-text').textContent=story.sourceText||'';
+  $('#ai-detail').textContent = story.aiDisclosure || (story.aiGenerated === true ? '本作品包含 AI 生成的画面或改编文字。原作出处与改编内容分别注明。' : story.aiGenerated === false ? '提交声明未使用 AI；此声明未经本站独立认证。' : '创作方式未注明，AI 参与情况请向制作人核实。');
+  const p = story.publication || {};
+  const optional = (name, value) => { $('#' + name + '-detail').textContent = value || ''; $('#' + name + '-detail').hidden = !value; $('#' + name + '-label').hidden = !value; };
+  optional('contributor', story.contributor); optional('contact', p.contact); optional('license', p.sourceNote);
+  $('#reuse-detail').textContent = p.reuse || '未提供额外转载授权；请核对来源许可，必要时联系相应权利人。';
+  const workURL = p.workUrl ? publicURL(p.workUrl) : '';
+  if (workURL) { const a = node('a', '', '查看公开作品'); a.href = workURL; a.target = '_blank'; a.rel = 'noopener noreferrer'; $('#work-detail').replaceChildren(a); } else { $('#work-label').hidden = true; $('#work-detail').hidden = true; }
+  optional('identity', story.exportIdentity ? `${story.exportIdentity.storyId} · 版本 ${story.exportIdentity.revision}` : '');
+  $('#original-notes').hidden = !story.sourceText; $('#original-text').textContent = story.sourceText || '';
   $('#model-detail').textContent = models.join(' / ');
   $('#model-detail').hidden = !models.length; $('#model-label').hidden = !models.length;
   $('#adaptation-detail').textContent = story.adaptationNote || '';
@@ -173,7 +176,7 @@ try {
   const sourceURL = externalURL(story.source?.url);
   if (sourceURL) { const link = node('a', '', story.source?.title || '查看原作出处'); link.href = sourceURL; link.target = '_blank'; link.rel = 'noopener noreferrer'; $('#source-detail').append(link); }
   else $('#source-detail').textContent = story.source?.title || '未注明';
-  pages = story.pages.map((page,index) => pageElement(page,index,manifestURL));
+  pages = story.pages.map((page, index) => pageElement(page, index, manifestURL));
   $('#story-viewer').append(...pages);
   $('#story-ending').hidden = false;
   $('#reader-status').hidden = true; $('#reader-content').hidden = false;

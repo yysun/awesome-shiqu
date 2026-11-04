@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // Import only public story fields and validated images; never overwrite a reviewed story.
-import {createHash} from 'node:crypto';
-import {lstat, mkdir, readFile, rm, writeFile} from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { lstat, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import {fileURLToPath, pathToFileURL} from 'node:url';
-import {assert, LIMITS, localDate, validateImageName, validateManifest, validateSlug} from './content.mjs';
-import {readZip} from './zip.mjs';
-import {parseStoryFiles} from '../site/assets/story-archive.mjs';
-export {parseStoryboard} from '../site/assets/story-archive.mjs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { assert, LIMITS, localDate, validateImageName, validateManifest, validateSlug } from './content.mjs';
+import { readZip } from './zip.mjs';
+import { parseStoryFiles } from '../site/assets/story-archive.mjs';
+export { parseStoryboard } from '../site/assets/story-archive.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -22,26 +22,26 @@ export function prepareStory(zip, options) {
     assert(data, `ZIP 缺少第 ${index + 1} 幅图片：${page.image}`);
     const extension = validateImageName(data, page.image);
     const image = `images/${String(index + 1).padStart(digits, '0')}.${extension}`;
-    images.push({name: image, bytes: data});
-    assert(!page.sha256||createHash('sha256').update(data).digest('hex')===page.sha256,`第 ${index+1} 幅图片 SHA-256 与声明不符。`);
-    return {...page,image};
+    images.push({ name: image, bytes: data });
+    assert(!page.sha256 || createHash('sha256').update(data).digest('hex') === page.sha256, `第 ${index + 1} 幅图片 SHA-256 与声明不符。`);
+    return { ...page, image };
   });
   const manifest = validateManifest({
-    schemaVersion: 1, ...parsed, id: validateSlug(options.slug), author: parsed.author??'',contributor:options.author,
+    schemaVersion: 1, ...parsed, id: validateSlug(options.slug), author: parsed.author ?? '', contributor: options.author,
     publishedAt: options.date || localDate(), book: options.book || parsed.book,
-    source: {...parsed.source, ...(options.sourceUrl ? {url: options.sourceUrl} : {})},
-    aiGenerated: parsed.aiGenerated===undefined?true:parsed.aiGenerated, pages,
+    source: { ...parsed.source, ...(options.sourceUrl ? { url: options.sourceUrl } : {}) },
+    aiGenerated: parsed.aiGenerated === undefined ? true : parsed.aiGenerated, pages,
   });
-  return {manifest, images};
+  return { manifest, images };
 }
 
 export async function importStory(inputPath, options, root = ROOT) {
   const stat = await lstat(inputPath);
   assert(stat.isFile() && !stat.isSymbolicLink() && stat.size <= LIMITS.archiveBytes,
-    '输入必须是普通 ZIP 文件，最大 256 MiB。');
+    `输入必须是普通 ZIP 文件，最大 ${LIMITS.archiveBytes / 1024 / 1024} MiB。`);
   const prepared = prepareStory(await readFile(inputPath), options);
   const storiesRoot = path.join(root, 'stories');
-  await mkdir(storiesRoot, {recursive: true});
+  await mkdir(storiesRoot, { recursive: true });
   const rootStat = await lstat(storiesRoot);
   assert(rootStat.isDirectory() && !rootStat.isSymbolicLink(), 'stories 必须是真实文件夹。');
   const destination = path.join(storiesRoot, prepared.manifest.id);
@@ -52,9 +52,9 @@ export async function importStory(inputPath, options, root = ROOT) {
   }
   try {
     await mkdir(path.join(destination, 'images'));
-    for (const image of prepared.images) await writeFile(path.join(destination, image.name), image.bytes, {flag: 'wx'});
-    await writeFile(path.join(destination, 'story.json'), JSON.stringify(prepared.manifest, null, 2) + '\n', {flag: 'wx'});
-  } catch (error) { await rm(destination, {recursive: true, force: true}); throw error; }
+    for (const image of prepared.images) await writeFile(path.join(destination, image.name), image.bytes, { flag: 'wx' });
+    await writeFile(path.join(destination, 'story.json'), JSON.stringify(prepared.manifest, null, 2) + '\n', { flag: 'wx' });
+  } catch (error) { await rm(destination, { recursive: true, force: true }); throw error; }
   return prepared.manifest;
 }
 
@@ -64,8 +64,8 @@ function help() {
 
 export function argumentsForImport(args) {
   assert(args.length && !args[0].startsWith('--'), '请提供 ZIP 路径。运行 pnpm import:story --help 查看用法。');
-  const result = {inputPath: args[0], options: {}};
-  const keys = {'--slug': 'slug', '--author': 'author', '--date': 'date', '--source-url': 'sourceUrl', '--book': 'book'};
+  const result = { inputPath: args[0], options: {} };
+  const keys = { '--slug': 'slug', '--author': 'author', '--date': 'date', '--source-url': 'sourceUrl', '--book': 'book' };
   for (let index = 1; index < args.length; index += 2) {
     const key = keys[args[index]], value = args[index + 1];
     assert(key && typeof value === 'string' && value.trim() && !value.startsWith('--'), `无效或缺少值的参数：${args[index]}`);
@@ -80,7 +80,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   if (process.argv.includes('--help') || process.argv.includes('-h')) help();
   else {
     try {
-      const {inputPath, options} = argumentsForImport(process.argv.slice(2));
+      const { inputPath, options } = argumentsForImport(process.argv.slice(2));
       const story = await importStory(path.resolve(inputPath), options);
       console.log(`已导入《${story.title}》：${story.pages.length} 幅，stories/${story.id}/\n请审阅署名、出处、图片和字幕，再运行 pnpm build。`);
     } catch (error) { console.error(`导入失败：${error.message}`); process.exitCode = 1; }

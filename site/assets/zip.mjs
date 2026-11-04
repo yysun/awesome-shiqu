@@ -9,6 +9,10 @@ export const ZIP_LIMITS = Object.freeze({
   pages: 80,
 });
 
+export function zipEntryLimit(name) {
+  return name === '故事.json' || name === '分镜.md' ? ZIP_LIMITS.markdownBytes : ZIP_LIMITS.imageBytes;
+}
+
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
 export function safeArchivePath(value) {
@@ -19,7 +23,7 @@ export function safeArchivePath(value) {
   return value;
 }
 
-const crcTable = Uint32Array.from({length: 256}, (_, i) => {
+const crcTable = Uint32Array.from({ length: 256 }, (_, i) => {
   let value = i;
   for (let bit = 0; bit < 8; bit++) value = value & 1 ? 0xedb88320 ^ value >>> 1 : value >>> 1;
   return value >>> 0;
@@ -31,7 +35,7 @@ export function crc32(bytes) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-const utf8 = new TextDecoder('utf-8', {fatal: true});
+const utf8 = new TextDecoder('utf-8', { fatal: true });
 function filename(bytes) {
   try { return safeArchivePath(utf8.decode(bytes)); }
   catch (error) { throw new Error(`ZIP 文件名无效：${error.message}`); }
@@ -52,7 +56,7 @@ async function inflate(bytes, size, name) {
   let length = 0;
   try {
     while (true) {
-      const {done, value} = await reader.read();
+      const { done, value } = await reader.read();
       if (done) break;
       assert(length + value.length <= size, `ZIP 压缩数据超过声明大小：${name}`);
       output.set(value, length);
@@ -61,7 +65,7 @@ async function inflate(bytes, size, name) {
     assert(length === size, `ZIP 解压长度不一致：${name}`);
     return output;
   } catch {
-    await reader.cancel().catch(() => {});
+    await reader.cancel().catch(() => { });
     throw new Error(`ZIP 压缩数据损坏或超过声明大小：${name}`);
   } finally { reader.releaseLock(); }
 }
@@ -100,7 +104,7 @@ export async function readZip(input) {
     const normalized = name.replace(/\/$/, '').normalize('NFC').toLowerCase();
     assert(!names.has(normalized), `ZIP 中存在重复或大小写冲突的文件：${name}`);
     names.add(normalized);
-    assert(expanded <= (name === '分镜.md' || /\.(?:md|txt|json)$/i.test(name) ? ZIP_LIMITS.markdownBytes : ZIP_LIMITS.imageBytes), `ZIP 文件过大：${name}`);
+    assert(expanded <= zipEntryLimit(name), `ZIP 文件过大：${name}`);
     total += expanded;
     assert(total <= ZIP_LIMITS.expandedBytes, 'ZIP 解压后的总大小超过 256 MiB。');
     bounds(bytes, local, 30);
@@ -124,7 +128,7 @@ export async function readZip(input) {
     for (const [a, b] of ranges) assert(recordEnd <= a || local >= b, 'ZIP 文件数据相互重叠。');
     ranges.push([local, recordEnd]);
     assert(!name.endsWith('/') || expanded === 0, 'ZIP 文件夹不能包含数据。');
-    records.push({name, method, crc, compressed, expanded, dataStart, dataEnd});
+    records.push({ name, method, crc, compressed, expanded, dataStart, dataEnd });
     cursor += 46 + nameLength + extraLength + commentLength;
   }
   assert(cursor === end, 'ZIP 目录条目数量不一致。');

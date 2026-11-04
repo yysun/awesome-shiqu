@@ -92,6 +92,13 @@ test('accepts deflated archives and Windows newlines, keeping prompts out of all
   assert.deepEqual(parseStoryboard(SOURCE.replaceAll('\n', '\r\n')), parseStoryboard(SOURCE));
 });
 
+test('Node imports share archive limits and allow larger prompt support files', () => {
+  assert.equal(LIMITS.archiveBytes, 100 * 1024 * 1024);
+  assert.equal(LIMITS.expandedBytes, 256 * 1024 * 1024);
+  const name = '提示词/画面提示词.md', prompt = Buffer.alloc(LIMITS.markdownBytes + 1, 97);
+  assert.equal(readZip(zip([[name, prompt]])).get(name).length, prompt.length);
+});
+
 test('ignores reserved headings in private production prompts and rejects ambiguous final-frame footers', () => {
   const privateHeadings = SOURCE.replace('PRIVATE-PRODUCTION-PROMPT', '## 余味\n\nPRIVATE-END-TEXT\n\n## 第 1 幅\n\nPRIVATE-FRAME-TEMPLATE');
   assert.deepEqual(parseStoryboard(privateHeadings), parseStoryboard(SOURCE));
