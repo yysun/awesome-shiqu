@@ -1,0 +1,4 @@
+interface:
+  display_name: "小红书图文发布"
+  short_description: "将拾趣故事发布或更新为小红书图文，保留简介、故事直达链接与AI声明"
+  default_prompt: "使用 $rednote-publish 将指定故事发布到小红书，在正文保留简介、故事直达链接和AI声明。"

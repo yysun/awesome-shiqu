@@ -1,0 +1,4 @@
+interface:
+  display_name: "今日头条图文发布"
+  short_description: "将已有文章或拾趣作品排版为头条文章，核对图文、署名与发布结果"
+  default_prompt: "使用 $toutiao-publish 将指定作品排版并发布到今日头条，保留署名、来源和 AI 声明。"
