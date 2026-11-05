@@ -1,4 +1,4 @@
-// Synthetic exports exercise the shared browser/import parser without publishing test stories.
+// 用合成导出验证浏览器与导入共用的解析器，不发布测试故事。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateRawSync } from 'node:zlib';
@@ -161,6 +161,34 @@ test('JSON takes precedence over Markdown and shares public fields with the sync
   assert.equal(parseStoryJSON(JSON.stringify(withoutModels)).storyboardModels, undefined);
   assert.equal((await parseStoryArchive(storyZip(), OPTIONS)).manifest.generationModels, undefined);
   assert.equal((await parseStoryArchive(storyZip(), OPTIONS)).manifest.storyboardModels, undefined);
+});
+
+test('image credits use the last saved model for each current frame across preview and import', async () => {
+  for (const [history, expected] of [
+    [[{step: 'image:0', model: 'old-image'}, {step: 'image:1', model: 'old-image'},
+      {step: 'image:0', model: 'new-image'}, {step: 'image:1', model: 'new-image'}], ['text-model', 'new-image']],
+    [[{step: 'image:0', model: 'old-image'}, {step: 'image:1', model: 'old-image'},
+      {step: 'image:0', model: 'new-image'}], ['text-model', 'new-image', 'old-image']],
+    [[{step: 'image:1', model: 'first-image'}, {step: 'image:0', model: 'new-image'},
+      {step: 'image:1', model: 'last-image'}, {step: 'image:0', model: 'new-image'}], ['text-model', 'last-image', 'new-image']],
+    [[{step: 'image:2', model: 'removed-frame'}, {step: 'image:99', model: 'removed-frame'}], ['text-model']],
+    [[{model: 'legacy-model'}, {step: 'image:unknown', model: 'unspecified-model'}], ['text-model', 'legacy-model', 'unspecified-model']],
+  ]) {
+    const data = {...JSON_STORY, generationModels: [{step: 'plan:0', model: 'text-model'}, ...history]};
+    const input = JSON.stringify(data), bytes = jsonZip(input);
+    const preview = await parseStoryArchive(bytes, OPTIONS);
+    const imported = prepareStory(bytes, {slug: 'tang-lang', author: OPTIONS.author});
+    for (const story of [parseStoryJSON(input), preview.manifest, imported.manifest]) {
+      assert.deepEqual(story.generationModels, expected);
+      assert.deepEqual(story.storyboardModels, ['text-model']);
+      assert.equal(JSON.stringify(story).includes('image:0'), false);
+    }
+  }
+  const input = JSON.stringify({...JSON_STORY, generationModels: [
+    {step: 'image:0', model: ''}, {step: 'image:0', model: 'valid-image'},
+  ]});
+  assert.throws(() => parseStoryJSON(input), /模型名/);
+  await assert.rejects(parseStoryArchive(jsonZip(input), OPTIONS), /模型名/);
 });
 
 test('JSON summary and legacy hook normalize to the existing public hook field', async () => {

@@ -1,4 +1,4 @@
-// Build synthetic ZIP collections in temporary directories, never in the public works library.
+// 在临时目录构建合成 ZIP 作品集，避免测试作品进入公开书库。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
@@ -97,7 +97,9 @@ test('JSON model names survive archive catalogues, legacy import, and static pub
     title: 'JSON 作品', bookId: '测试古书', sourceReference: '《测试古书》', artStyleLabel: '水墨',
     summary: '新版 JSON 简介。',
     productionPrompt: 'PRIVATE-PRODUCTION-PROMPT', sourceText: '保存的公开原文',
-    generationModels: [{step: 'plan:0', model: 'text-model'}, {step: 'repair:1:0', model: 'text-model', prompt: 'PRIVATE-NOTES'}, {step: 'image:0', model: 'image-model'}, {step: 'image:1', model: 'image-model'}],
+    generationModels: [{step: 'plan:0', model: 'text-model'}, {step: 'repair:1:0', model: 'text-model', prompt: 'PRIVATE-NOTES'},
+      {step: 'image:0', model: 'retired-image-model'}, {step: 'image:1', model: 'retired-image-model'},
+      {step: 'image:0', model: 'image-model'}, {step: 'image:1', model: 'image-model'}],
     pages: [{image: '图片/01.png', caption: 'JSON 第一幅。', prompt: 'PRIVATE-IMAGE-PROMPT'}, {image: '图片/02.png', caption: 'JSON 第二幅。'}],
   };
   const bytes = zip([['故事.json', JSON.stringify(data)], ['图片/01.png', PNG], ['图片/02.png', PNG]]);

@@ -1,4 +1,4 @@
-// Parse public story fields from Shiqu exports without publishing prompts or generation history.
+// 从拾趣导出提取公开字段，图片模型按现用画幅的最后记录统计，不公开提示词或生成历史。
 import {publicationFields,pagePublicFields,publicText,validateAI} from './story-publication.mjs';
 import {sha256Hex} from './sha256.mjs';
 import {readZip, ZIP_LIMITS, safeArchivePath} from './zip.mjs';
@@ -51,11 +51,20 @@ export function parseStoryJSON(input) {
   let models = [], storyboardModels = [];
   if (data.generationModels !== undefined) {
     assert(Array.isArray(data.generationModels) && data.generationModels.length <= 1000, '故事.json 的生成模型必须是数组，最多 1000 条。');
-    models = validateGenerationModels(data.generationModels.map(record => {
+    const records = data.generationModels.map(record => {
       assert(record && typeof record === 'object' && !Array.isArray(record), '故事.json 的生成模型记录必须是对象。');
-      return record.model;
-    }));
-    // Batched exports use "plan" for the outline and "plan:<offset>" for actual storyboards.
+      return {step: record.step, model: text(record.model, '模型名', 200)};
+    });
+    const otherModels = [], imageModels = new Map();
+    for (const record of records) {
+      const image = typeof record.step === 'string' && record.step.match(/^image:(\d+)$/);
+      if (image) imageModels.set(Number(image[1]), record.model);
+      else otherModels.push(record.model);
+    }
+    // 记录按保存顺序追加，同一幅只采用最后一条；已不在正文中的画幅不计入。
+    models = validateGenerationModels([...otherModels, ...[...imageModels]
+      .filter(([index]) => index < data.pages.length).map(([, model]) => model)]);
+    // 分批导出的 plan 是提纲，plan:<起始幅号> 才是分镜。
     const batches = data.generationModels.filter(record => typeof record.step === 'string' && /^plan:\d+$/.test(record.step));
     const storyboard = batches.length ? batches : data.generationModels.filter(record => record.step === 'plan');
     storyboardModels = validateGenerationModels(storyboard.map(record => record.model));
