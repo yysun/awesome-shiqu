@@ -1,4 +1,4 @@
-// Verify public artifacts directly, including immutable updates, privacy and bounded native-image loading.
+// 直接核验当前来源的公开产物、隐私边界和原生图片加载的资源限制。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import filesystem, {cp, mkdtemp, mkdir, readFile, readdir, writeFile, rm} from 'node:fs/promises';
@@ -89,24 +89,42 @@ test('initial HTML contains the actual ordered story, public disclosures, dimens
   const legacy = await readFile(path.join(root,'dist/reader.html'),'utf8'); assert.match(legacy,/noindex,follow/); assert.ok(legacy.includes(route.path));
 });
 
-test('updates retain immutable old bytes; failed validation and failed promotion preserve the previous release',async t=>{
+test('updates publish only current assets; repeated and clean builds agree and preserve canonical routes',async t=>{
   const root = await workspace(t); await build(root);
-  const first=(await catalogue(root)).stories[0],oldManifest=await readFile(path.join(root,'dist',first.url));
+  const {entry:first,route:firstRoute}=await htmlFor(root);
   await writeFile(path.join(root,'works/alice/story.zip'),changedArchive({...source,summary:'新版本简介'})); await build(root);
-  const second=(await catalogue(root)).stories[0]; assert.notEqual(second.version,first.version);
-  assert.deepEqual(await readFile(path.join(root,'dist',first.url)),oldManifest);
-  const {html}=await htmlFor(root); assert.ok(html.includes(second.version)); assert.equal(html.includes(first.version),false);
+  const {entry:second,html,route:secondRoute}=await htmlFor(root);
+  assert.notEqual(second.version,first.version); assert.equal(secondRoute.path,firstRoute.path);
+  await assert.rejects(readFile(path.join(root,'dist',first.url)),/ENOENT/);
+  await assert.rejects(readFile(path.join(root,'dist',first.cover)),/ENOENT/);
+  assert.deepEqual(await readdir(path.join(root,'dist/public',second.id)),[second.version]);
+  assert.ok(html.includes(second.version)); assert.equal(html.includes(first.version),false);
+  const snapshot=async()=>Promise.all((await allFiles(path.join(root,'dist'))).sort().map(async file=>[path.relative(path.join(root,'dist'),file),hash(await readFile(file))]));
+  const repeated=await snapshot();
+  await rm(path.join(root,'dist'),{recursive:true}); await build(root);
+  assert.deepEqual(await snapshot(),repeated);
+});
+
+test('failed validation and failed promotion preserve the previous complete release',async t=>{
+  const root = await workspace(t); await build(root);
+  const entry=(await catalogue(root)).stories[0];
   const previous=await readFile(path.join(root,'dist/catalog.json'));
+  const manifest=await readFile(path.join(root,'dist',entry.url)),image=await readFile(path.join(root,'dist',entry.cover));
+  const assertPrevious=async()=>{
+    assert.deepEqual(await readFile(path.join(root,'dist/catalog.json')),previous);
+    assert.deepEqual(await readFile(path.join(root,'dist',entry.url)),manifest);
+    assert.deepEqual(await readFile(path.join(root,'dist',entry.cover)),image);
+  };
   await writeFile(path.join(root,'works/alice/story.zip'),Buffer.from('PRIVATE-CORRUPT-ARCHIVE'));
   await assert.rejects(build(root),error=>!error.message.includes('PRIVATE-')&&error.message.includes('验证失败'));
-  assert.deepEqual(await readFile(path.join(root,'dist/catalog.json')),previous);
-  await writeFile(path.join(root,'works/alice/story.zip'),archive);
+  await assertPrevious();
+  await writeFile(path.join(root,'works/alice/story.zip'),changedArchive({...source,summary:'晋升失败的新版本'}));
   const rename=filesystem.rename; let failed=false;
   const mock=t.mock.method(filesystem,'rename',async(from,to)=>{
     if(!failed&&to===path.join(root,'dist')){failed=true;throw Object.assign(Error('promotion failed'),{code:'EIO'});}
     return rename(from,to);
   });syncBuiltinESMExports();
-  try {await assert.rejects(build(root),/promotion failed/);assert.deepEqual(await readFile(path.join(root,'dist/catalog.json')),previous);}
+  try {await assert.rejects(build(root),/promotion failed/);await assertPrevious();}
   finally {mock.mock.restore();syncBuiltinESMExports();}
 });
 
@@ -122,22 +140,7 @@ test('old-output cleanup failure reports a successful promoted release',async t=
   finally {mock.mock.restore();warning.mock.restore();syncBuiltinESMExports();}
 });
 
-test('CI retention revalidates historical public resources and excludes unrelated files and symlinks',async t=>{
-  const root=await workspace(t);await build(root);const first=(await catalogue(root)).stories[0];
-  const retained=path.join(root,'previous');await cp(path.join(root,'dist'),retained,{recursive:true});
-  await writeFile(path.join(retained,'public',first.id,first.version,'PRIVATE-NOTE.txt'),'PRIVATE');
-  await rm(path.join(root,'dist'),{recursive:true});await writeFile(path.join(root,'works/alice/story.zip'),changedArchive({...source,summary:'CI next'}));
-  const original=process.env.SHIQU_PREVIOUS_PUBLICATION;process.env.SHIQU_PREVIOUS_PUBLICATION=retained;
-  try {
-    await build(root);assert.ok(await readFile(path.join(root,'dist',first.url)));
-    await assert.rejects(readFile(path.join(root,'dist',path.dirname(first.url),'PRIVATE-NOTE.txt')),/ENOENT/);
-    const before=await readFile(path.join(root,'dist/catalog.json'));
-    await writeFile(path.join(retained,first.url),'{}');await rm(path.join(root,'dist',path.dirname(first.url)),{recursive:true});await assert.rejects(build(root));
-    assert.deepEqual(await readFile(path.join(root,'dist/catalog.json')),before);
-  } finally {if(original===undefined)delete process.env.SHIQU_PREVIOUS_PUBLICATION;else process.env.SHIQU_PREVIOUS_PUBLICATION=original;}
-});
-
-test('withdrawing a selected source removes its historical public resources from subsequent deployments',async t=>{
+test('withdrawing a selected source removes its public resources from subsequent deployments',async t=>{
   const root=await workspace(t);await build(root);const entry=(await catalogue(root)).stories[0];
   await rm(path.join(root,'works/alice/story.zip'));await build(root);
   assert.equal((await catalogue(root)).stories.length,0);
@@ -161,15 +164,13 @@ test('static remote loading fetches one exact manifest and never downloads image
   } finally {URL.createObjectURL=original;}
 });
 
-test('legal original text with many markup characters survives escaped publication, remote loading and retention', async t => {
+test('legal original text with many markup characters survives escaped publication and remote loading', async t => {
   const root = await workspace(t), data = {...source,sourceText:'<'.repeat(400000)};
   await writeFile(path.join(root,'works/alice/story.zip'),changedArchive(data)); await build(root);
   const entry=(await catalogue(root)).stories[0],manifest=await readFile(path.join(root,'dist',entry.url));
   assert.ok(manifest.length>2*1024*1024);
   const loaded=await loadPublishedStory({...entry,manifestURL:new URL(entry.url,ROOT).href},{fetcher:async()=>new Response(manifest)});
   assert.equal(loaded.story.sourceText,data.sourceText);
-  await writeFile(path.join(root,'works/alice/story.zip'),changedArchive({...source,summary:'next'}));await build(root);
-  assert.deepEqual(await readFile(path.join(root,'dist',entry.url)),manifest);
 });
 
 // Valid PNG with a large ancillary text chunk; actual image pixels remain a decodable 1×1.

@@ -1,9 +1,9 @@
-// Materialize only validated public fields and referenced original bytes in immutable version directories.
+// 仅将当前来源中已验证的公开字段和引用图片原字节写入内容哈希目录。
 import {createHash} from 'node:crypto';
-import {lstat, mkdir, readdir, readFile, writeFile} from 'node:fs/promises';
+import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {MAX_PUBLIC_MANIFEST_BYTES} from '../site/assets/story-publication.mjs';
-import {assert, LIMITS, validateManifest, validateImageName, regularFile} from './content.mjs';
+import {assert, validateManifest, validateImageName} from './content.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 export const publicJSON = value => JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
@@ -69,45 +69,4 @@ export async function writePublication(staging, publication) {
   for (const image of images) { await writeFile(path.join(folder, image.name), image.bytes); bytes += image.bytes.length; }
   const json = publicJSON(manifest) + '\n'; assert(Buffer.byteLength(json) <= MAX_PUBLIC_MANIFEST_BYTES, '公开清单超过允许大小。'); await writeFile(path.join(folder, 'story.json'), json);
   return bytes + Buffer.byteLength(json);
-}
-
-// Revalidate previous publications rather than recursively copying arbitrary retained files.
-export async function retainPublications(previous, staging, currentDirectories, maximum = LIMITS.siteBytes) {
-  let ids; try { ids = await readdir(path.join(previous, 'public')); } catch (error) { if (error.code === 'ENOENT') return 0; throw error; }
-  let size = 0;
-  const selectedIds = new Set([...currentDirectories].map(directory => directory.split('/')[1]));
-  for (const id of ids) {
-    if (!selectedIds.has(id)) continue;
-    assert(/^[a-z0-9][a-z0-9-]{0,119}$/.test(id), '保留作品编号无效。');
-    const root = path.join(previous, 'public');
-    const folder = path.join(root, id), stat = await lstat(folder);
-    assert(stat.isDirectory() && !stat.isSymbolicLink(), '保留作品目录无效。');
-    for (const version of await readdir(folder)) {
-      assert(/^[a-f0-9]{64}$/.test(version), '保留作品版本无效。');
-      const directory = `public/${id}/${version}`;
-      if (currentDirectories.has(directory)) continue;
-      const from = path.join(folder, version);
-      const data = JSON.parse(await regularFile(path.join(from, 'story.json'), root, MAX_PUBLIC_MANIFEST_BYTES));
-      const {version: declared, provenance, pages, ...metadata} = data;
-      const clean = validateManifest({...metadata, pages: pages.map(({width, height, ...page}) => page)}, id);
-      if (provenance) {
-        const {validArchivePath} = await import('../site/assets/archive-path.mjs');
-        assert(Object.keys(provenance).sort().join(',') === 'archiveBytes,sha256,sourcePath' && validArchivePath(provenance.sourcePath) && /^[a-f0-9]{64}$/.test(provenance.sha256) && Number.isSafeInteger(provenance.archiveBytes) && provenance.archiveBytes > 0 && provenance.archiveBytes <= LIMITS.archiveBytes, '保留来源无效。');
-      }
-      const images = [];
-      for (const page of clean.pages) {
-        const bytes = await regularFile(path.join(from, page.image), root, LIMITS.imageBytes);
-        assert(hash(bytes) === page.sha256, '保留图片摘要不符。');
-        images.push({name: page.image, bytes}); size += bytes.length;
-        assert(size <= maximum, '保留发布物超过 950 MiB。');
-      }
-      const restored = preparePublication({manifest: clean, images, ...(provenance ? {relativePath: provenance.sourcePath, ...provenance} : {})});
-      assert(restored.manifest.version === version && declared === version && publicJSON(data) === publicJSON(restored.manifest), '保留清单版本不符。');
-      const written = await writePublication(staging, restored);
-      size += written - images.reduce((sum, image) => sum + image.bytes.length, 0);
-      assert(size <= maximum, '保留发布物超过 950 MiB。');
-      currentDirectories.add(directory);
-    }
-  }
-  return size;
 }

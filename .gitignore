@@ -10,5 +10,4 @@ node_modules/
 
 !tests/fixtures/*.zip
 
-.previous-publication/
 .dist-build-*/

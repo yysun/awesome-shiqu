@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Publish reviewed stories and portable static book pages without exposing private metadata.
+// 仅从当前已审核来源构建可移植的静态阅读站，排除私有元数据并在失败时保留上一份完整输出。
 import { createHash } from 'node:crypto';
 import { copyFile, lstat, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -9,7 +9,7 @@ import { mergeCatalogs, readArchiveLibrary } from './archive-library.mjs';
 import { FACETS, facetOf, facetRoutes, groupByBook, slugConflicts, storyRoutes } from '../site/assets/story-url.mjs';
 import { validateFeatured } from '../site/assets/featured.mjs';
 
-import {preparePublication, writePublication, retainPublications} from './static-publication.mjs';
+import {preparePublication, writePublication} from './static-publication.mjs';
 import {staticStoryHTML} from './story-html.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -388,9 +388,6 @@ export async function build(root = ROOT) {
       size += await writePublication(staging, publication);
       assert(size <= LIMITS.siteBytes, '站点文件超过 950 MiB。');
     }
-    const retained = new Set(publications.map(item => item.directory));
-    size += await retainPublications(destination, staging, retained, LIMITS.siteBytes - size);
-    if (process.env.SHIQU_PREVIOUS_PUBLICATION) size += await retainPublications(path.resolve(process.env.SHIQU_PREVIOUS_PUBLICATION), staging, retained, LIMITS.siteBytes - size);
     const catalog = mergeCatalogs({stories: publications.map(item => item.entry)});
     // SEO-friendly pages: books, categories, and one page per published story.
     let config = null;
