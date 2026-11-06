@@ -3,6 +3,9 @@ import {publicationFields,pagePublicFields,publicText,validateAI} from './story-
 import {sha256Hex} from './sha256.mjs';
 import {readZip, ZIP_LIMITS, safeArchivePath} from './zip.mjs';
 
+// 导出中的内部书籍 ID 需转为正式书名；已有中文书名保持原样。
+const BOOK_TITLES = new Map([['liaozhai', '聊斋志异']]);
+
 function assert(condition, message) { if (!condition) throw new Error(message); }
 function text(value, label, limit, optional = false) {
   assert(typeof value === 'string' && value.length <= limit && !value.includes('\0') && (optional || value.trim()), `${label}为空或超过长度限制。`);
@@ -43,6 +46,7 @@ export function parseStoryJSON(input) {
   assert(Array.isArray(data.pages) && data.pages.length >= 1 && data.pages.length <= ZIP_LIMITS.pages,
     '故事.json 需要 1–80 幅画面。');
   const sourceTitle = text(data.sourceReference, '出处标题', 1000);
+  const bookId = text(data.bookId === undefined ? sourceTitle.match(/《([^》]+)》/)?.[1] || sourceTitle : data.bookId, '书名', 1000);
   const url = sourceURL(data.sourceUrl === undefined ? '' : text(data.sourceUrl, '出处链接', 2000, true));
   const summary = data.summary === undefined ? data.hook : data.summary;
   const publicFields=publicationFields({...data,...(data.id!==undefined&&data.revision!==undefined?{exportIdentity:{storyId:data.id,revision:data.revision,...(data.createdAt===undefined?{}:{createdAt:data.createdAt}),...(data.updatedAt===undefined?{}:{updatedAt:data.updatedAt})}}:{})});
@@ -72,7 +76,7 @@ export function parseStoryJSON(input) {
   return {
     ...publicFields,author,...(data.aiGenerated===undefined?{}:{aiGenerated:validateAI(data.aiGenerated)}),
     title: text(data.title, '标题', 200), hook: text(summary === undefined ? '' : summary, '简介', 2000, true),
-    book: text(data.bookId === undefined ? sourceTitle.match(/《([^》]+)》/)?.[1] || sourceTitle : data.bookId, '书名', 1000),
+    book: BOOK_TITLES.get(bookId) || bookId,
     theme: text(data.theme === undefined ? '' : data.theme, '主题', 1000, true),
     artStyle: text(data.artStyleLabel ?? '', '画风', 200, true),
     source: {title: sourceTitle, ...(url ? {url} : {})},

@@ -163,6 +163,26 @@ test('JSON takes precedence over Markdown and shares public fields with the sync
   assert.equal((await parseStoryArchive(storyZip(), OPTIONS)).manifest.storyboardModels, undefined);
 });
 
+test('internal book IDs resolve to display titles across preview and import without changing existing titles', async () => {
+  for (const [bookId, sourceReference, expected] of [
+    ['liaozhai', '《聊斋志异·第一卷》 · 第1–4段', '聊斋志异'],
+    [' liaozhai ', '《聊斋志异·第二卷》 · 第32–87段', '聊斋志异'],
+    ...['聊斋志异', '红楼梦', '三国演义', '水浒传', '西游记', '说苑', 'custom-book'].map(title => [title, '《原著·章节》', title]),
+    [undefined, '《说苑·正谏》', '说苑·正谏'],
+  ]) {
+    const input = JSON.stringify({...JSON_STORY, bookId, sourceReference});
+    const bytes = jsonZip(input), preview = await parseStoryArchive(bytes, OPTIONS);
+    const imported = prepareStory(bytes, {slug: 'tang-lang', author: OPTIONS.author});
+    for (const story of [parseStoryJSON(input), preview.manifest, imported.manifest]) {
+      assert.equal(story.book, expected);
+      assert.equal(story.source.title, sourceReference);
+    }
+  }
+  for (const bookId of ['', null, 7, {}, '无效\0书名', '字'.repeat(1001)]) {
+    assert.throws(() => parseStoryJSON(JSON.stringify({...JSON_STORY, bookId})), /书名/);
+  }
+});
+
 test('image credits use the last saved model for each current frame across preview and import', async () => {
   for (const [history, expected] of [
     [[{step: 'image:0', model: 'old-image'}, {step: 'image:1', model: 'old-image'},
