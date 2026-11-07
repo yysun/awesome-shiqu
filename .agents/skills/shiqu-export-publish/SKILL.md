@@ -27,5 +27,5 @@ description: 将用户选定的拾趣故事按标题、作品 ID 或已下载的
 ## 提交和推送
 
 1. 逐个暂存本次通过审阅的 `works/yysun/` 下的 ZIP，按确切路径操作。核对 `git diff --cached --name-status` 及目标路径的未暂存改动。用 `git commit --only -m 'content: 收录或更新《作品名》' -- <本次 ZIP 的确切路径>` 提交。已有暂存改动应保留，`dist/`、`catalog/`、解压文件及临时 ZIP 留在本次提交范围之外。若目标与 `HEAD` 字节一致，报告已是当前版本，跳过空提交。
-2. 核对新提交只包含选定 ZIP，且提交前的基线仍是远端 `main`。运行 `git push origin HEAD:refs/heads/main`，用 `git ls-remote origin refs/heads/main` 验证远端提交。远端前移、分支保护或认证失败时，保留已验证的本地结果并报告具体阻碍，避免强推。
+2. 核对新提交只包含选定 ZIP，且提交前的基线仍是远端 `main`。运行 `git push origin HEAD:refs/heads/main`，用 `git ls-remote origin refs/heads/main` 验证远端提交。如果 HTTPS 凭据读取失败，且 `gh auth status --hostname github.com` 显示有权推送的账号已登录，用 `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push origin HEAD:refs/heads/main` 重试一次。远端前移、分支保护或认证仍失败时，保留已验证的本地结果并报告具体阻碍，避免强推。
 3. 回报作品标题、ZIP 路径和画幅数、测试与构建结果、提交哈希和推送状态。只有实际核实部署成功时才说作品已上线。
