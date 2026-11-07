@@ -1,4 +1,16 @@
 // Shared SEO-friendly page paths: the build script and the site must map stories identically.
+// 对应拾趣内置书目中使用英文 ID 的三本书。
+const BOOK_TITLES = new Map([['liaozhai', '聊斋志异'], ['shishuo', '世说新语'], ['zhuangzi', '庄子']]);
+
+export function bookDisplayTitle(value, sourceTitle = '') {
+  const knownTitle = BOOK_TITLES.get(value);
+  if (knownTitle) return knownTitle;
+  // 拾趣的内部 ID 可从《书名·篇章》式出处补全，已填写的书名及出处原文保留。
+  if (!/^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$/.test(value)) return value;
+  const citedBook = sourceTitle.match(/^《([^《》]+)》/)?.[1].split(/[·•‧]/, 1)[0].trim();
+  return citedBook && /\p{Script=Han}/u.test(citedBook) ? citedBook : value;
+}
+
 export function slugify(value) {
   const slug = String(value ?? '').normalize('NFC').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '');
   return [...slug].slice(0, 80).join('').replace(/-+$/, '');
@@ -8,9 +20,11 @@ export function slugify(value) {
 export function storyRoutes(stories) {
   const counts = new Map(), routes = new Map();
   const entries = (Array.isArray(stories) ? stories : []).map(story => {
-    const bookTitle = (typeof story.book === 'string' && story.book.trim())
-      || (typeof story.source?.title === 'string' && story.source.title.trim()) || '';
-    const bookSlug = slugify(bookTitle) || '拾趣精选';
+    const sourceTitle = typeof story.source?.title === 'string' ? story.source.title.trim() : '';
+    const book = typeof story.book === 'string' ? story.book.trim() : '';
+    const bookTitle = book ? bookDisplayTitle(book, sourceTitle) : sourceTitle;
+    // 世说新语沿用已经公开分享的路径。
+    const bookSlug = bookTitle === '世说新语' ? 'shishuo' : slugify(bookTitle) || '拾趣精选';
     const titleSlug = slugify(story.title) || String(story.id);
     const key = `${bookSlug}/${titleSlug}`;
     counts.set(key, (counts.get(key) || 0) + 1);

@@ -77,27 +77,34 @@ test('a ZIP-only contribution publishes versioned original images without deploy
 test('internal book IDs publish one Chinese book page across volumes and retain source references', async t => {
   const root = await workspace(t);
   await rm(path.join(root, 'works/alice/test-story.zip'));
-  const sources = ['《聊斋志异·第一卷》 · 第1–4段', '《聊斋志异·第二卷》 · 第32–87段'];
-  for (const [index, title] of ['考城隍', '聂小倩'].entries()) {
-    const data = {title, bookId: 'liaozhai', sourceReference: sources[index],
+  const cases = [
+    ['考城隍', 'liaozhai', '《聊斋志异·第一卷》 · 第1–4段', '聊斋志异', '聊斋志异'],
+    ['聂小倩', 'liaozhai', '《聊斋志异·第二卷》 · 第32–87段', '聊斋志异', '聊斋志异'],
+    ['王戎识李', 'shishuo', '《世说新语·雅量》 · 第4则', '世说新语', 'shishuo'],
+    ['指南针', 'new-book_id', '《梦溪笔谈·杂志一》 · 第1则', '梦溪笔谈', '梦溪笔谈'],
+  ];
+  for (const [title, bookId, sourceReference] of cases) {
+    const data = {title, bookId, sourceReference,
       pages: [{image: '图片/01.png', caption: '测试旁白。'}]};
     await writeFile(path.join(root, 'works/alice', `${title}.zip`), zip([
       ['故事.json', JSON.stringify(data)], ['图片/01.png', PNG],
     ]));
   }
-  assert.equal((await build(root)).count, 2);
+  assert.equal((await build(root)).count, cases.length);
   const catalog = JSON.parse(await readFile(path.join(root, 'dist/catalog.json'), 'utf8'));
-  assert.deepEqual(await readdir(path.join(root, 'dist/books')), ['index.html', '聊斋志异']);
+  assert.deepEqual(await readdir(path.join(root, 'dist/books')), ['index.html', 'shishuo', '梦溪笔谈', '聊斋志异']);
   const bookPage = await readFile(path.join(root, 'dist/books/聊斋志异/index.html'), 'utf8');
   assert.match(bookPage, /<h1 id="book-title">聊斋志异 <span class="count">2 篇<\/span><\/h1>/);
-  for (const story of catalog.stories) {
-    assert.equal(story.book, '聊斋志异');
+  const shishuoPage = await readFile(path.join(root, 'dist/books/shishuo/index.html'), 'utf8');
+  assert.match(shishuoPage, /<h1 id="book-title">世说新语 <span class="count">1 篇<\/span><\/h1>/);
+  for (const [title, , sourceReference, book, slug] of cases) {
+    const story = catalog.stories.find(entry => entry.title === title);
+    assert.equal(story.book, book);
     const manifest = JSON.parse(await readFile(path.join(root, 'dist', story.url), 'utf8'));
-    assert.equal(manifest.book, '聊斋志异');
-    assert.ok(sources.includes(manifest.source.title));
-    const html = await readFile(path.join(root, 'dist/books/聊斋志异', story.title, 'index.html'), 'utf8');
-    assert.match(html, /聊斋志异/);
-    assert.equal(html.includes('liaozhai'), false);
+    assert.equal(manifest.book, book);
+    assert.equal(manifest.source.title, sourceReference);
+    const html = await readFile(path.join(root, 'dist/books', slug, title, 'index.html'), 'utf8');
+    assert.ok(html.includes(`<title>${title} · ${book} · 拾趣好故事</title>`));
   }
 });
 

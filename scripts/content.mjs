@@ -4,6 +4,7 @@ import { publicationFields, pagePublicFields, validateAI } from '../site/assets/
 import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { validateGenerationModels } from '../site/assets/story-archive.mjs';
+import { bookDisplayTitle } from '../site/assets/story-url.mjs';
 import { ZIP_LIMITS } from '../site/assets/zip.mjs';
 
 export const LIMITS = Object.freeze({
@@ -97,7 +98,7 @@ export function validateManifest(input, expectedId = input?.id) {
     schemaVersion: 1, id,
     title: text(input.title, '标题', 200),
     hook: text(input.hook ?? '', '简介', 2000, true),
-    book: text(input.book, '书名', 1000),
+    book: bookDisplayTitle(text(input.book, '书名', 1000), sourceTitle),
     theme: text(input.theme ?? '', '主题', 1000, true),
     artStyle: text(input.artStyle ?? '', '画风', 200, true),
     author: text(input.author, '署名', 120, true),

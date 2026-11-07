@@ -2,9 +2,7 @@
 import {publicationFields,pagePublicFields,publicText,validateAI} from './story-publication.mjs';
 import {sha256Hex} from './sha256.mjs';
 import {readZip, ZIP_LIMITS, safeArchivePath} from './zip.mjs';
-
-// 导出中的内部书籍 ID 需转为正式书名；已有中文书名保持原样。
-const BOOK_TITLES = new Map([['liaozhai', '聊斋志异']]);
+import {bookDisplayTitle} from './story-url.mjs';
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
 function text(value, label, limit, optional = false) {
@@ -76,7 +74,7 @@ export function parseStoryJSON(input) {
   return {
     ...publicFields,author,...(data.aiGenerated===undefined?{}:{aiGenerated:validateAI(data.aiGenerated)}),
     title: text(data.title, '标题', 200), hook: text(summary === undefined ? '' : summary, '简介', 2000, true),
-    book: BOOK_TITLES.get(bookId) || bookId,
+    book: bookDisplayTitle(bookId, sourceTitle),
     theme: text(data.theme === undefined ? '' : data.theme, '主题', 1000, true),
     artStyle: text(data.artStyleLabel ?? '', '画风', 200, true),
     source: {title: sourceTitle, ...(url ? {url} : {})},
@@ -201,7 +199,7 @@ export async function parseStoryArchive(bytes, options = {}) {
   const manifest = {
     ...publicationFields(parsed),contributor,
     schemaVersion: 1, id, title: text(parsed.title, '标题', 200), hook: text(parsed.hook, '简介', 2000, true),
-    book: text(options.book || parsed.book, '书名', 1000), theme: text(parsed.theme, '主题', 1000, true),
+    book: bookDisplayTitle(text(options.book || parsed.book, '书名', 1000)), theme: text(parsed.theme, '主题', 1000, true),
     artStyle: text(parsed.artStyle, '画风', 200, true), author:parsed.author??'', publishedAt,
     source: {title: text(parsed.source.title, '出处标题', 1000), ...(url ? {url} : {})},
     adaptationNote: text(parsed.adaptationNote, '改编说明', 6000, true), reflection: text(parsed.reflection, '结语', 3000, true),
