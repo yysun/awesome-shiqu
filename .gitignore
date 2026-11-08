@@ -11,3 +11,5 @@ node_modules/
 !tests/fixtures/*.zip
 
 .dist-build-*/
+
+output/
