@@ -1,4 +1,4 @@
-// Render untrusted story prose as text and retain reading progress across grid and scroll layouts.
+// 将不可信的故事正文作为纯文本渲染，在两种阅读模式中保留阅读进度。
 import { ROOT, validId, catalog, internalURL, externalURL, storyLink, storyRoute, publicationURL, hasLocalStoryPages, savedStories, toggleSaved, progressFor, saveProgress, node, toast } from './common.mjs';
 import { facetOf, facetRoutes, groupByBook, storyRoutes } from './story-url.mjs';
 import { storyCard } from './cards.mjs';
@@ -46,11 +46,27 @@ function pageElement(page, index, manifestURL) {
     url = internalURL(page.image, manifestURL);
     if (!url.pathname.startsWith(new URL('./', manifestURL).pathname)) throw Error('画面文件路径无效。');
   }
-  image.src = url; image.alt = `${story.title}，第 ${index + 1} 幅：${page.caption}`; image.loading = index === 0 ? 'eager' : 'lazy'; if (page.width) image.width = page.width; if (page.height) image.height = page.height; image.decoding = 'async'; image.draggable = false;
+  image.src = url; image.alt = `${story.title}，第 ${index + 1} 幅`; image.loading = index === 0 ? 'eager' : 'lazy'; if (page.width) image.width = page.width; if (page.height) image.height = page.height; image.decoding = 'async'; image.draggable = false;
   image.addEventListener('error', () => { if (!art.querySelector('.image-error')) art.append(node('p', 'image-error', '这幅画面暂时无法加载，请刷新重试。')); });
   art.append(image);
-  const caption = node('figcaption'); caption.append(node('p', 'caption-text', `${index + 1}. ${page.caption}`));
+  const caption = node('figcaption'); caption.id = `caption-${index}`; caption.append(node('p', 'caption-text', `${index + 1}. ${page.caption}`));
   figure.append(art, caption); return figure;
+}
+function enableCaptionToggle(figure, index) {
+  const art = figure.querySelector('.page-art'), image = art.querySelector('img'), caption = figure.querySelector('figcaption');
+  const button = node('button', 'caption-toggle');
+  button.type = 'button';
+  button.setAttribute('aria-label', `显示第 ${index + 1} 幅文字`);
+  button.setAttribute('aria-controls', caption.id);
+  button.setAttribute('aria-pressed', 'true');
+  image.setAttribute('aria-describedby', caption.id);
+  art.append(button);
+  button.addEventListener('click', () => {
+    const hidden = figure.classList.toggle('caption-hidden');
+    button.setAttribute('aria-pressed', String(!hidden));
+    if (hidden) image.removeAttribute('aria-describedby');
+    else image.setAttribute('aria-describedby', caption.id);
+  });
 }
 // Tell deep-linked readers where they are and what to read next, all from the lightweight catalogue.
 function placeStory(route, bookName) {
@@ -176,6 +192,7 @@ try {
   else $('#source-detail').textContent = story.source?.title || '未注明';
   pages = initialStory ? [...$('#story-viewer').querySelectorAll('.story-page')] : story.pages.map((page, index) => pageElement(page, index, manifestURL));
   if (!initialStory) $('#story-viewer').append(...pages);
+  pages.forEach(enableCaptionToggle);
   $('#story-ending').hidden = false;
   $('#reader-status').hidden = true; $('#reader-content').hidden = false;
   $('#save-story').disabled = localPreview; $('#share-story').disabled = localPreview;
