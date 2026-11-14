@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从本站公开故事清单和原图生成临时的小红书配文图。"""
+"""从本站公开故事清单和原图生成临时的社交媒体配文图。"""
 
 import argparse
 import json
@@ -29,7 +29,7 @@ def wrap_caption(draw, caption, font, width):
     return "\n".join(lines)
 
 
-def render_caption(source, output, caption, font_path):
+def render_caption(source, output, caption, font_path, index, total):
     with Image.open(source) as original:
         art = ImageOps.exif_transpose(original)
         art.thumbnail((1800, 1800), Image.Resampling.LANCZOS)
@@ -49,7 +49,8 @@ def render_caption(source, output, caption, font_path):
         for size in range(largest, smallest - 1, -1):
             font = ImageFont.truetype(str(font_path), size)
             spacing = round(size * 0.36)
-            text = wrap_caption(draw, caption, font, width - 2 * inset)
+            numbered_caption = f"{index:02d}/{total:02d}　{caption}"
+            text = wrap_caption(draw, numbered_caption, font, width - 2 * inset)
             left, top, right, bottom = draw.multiline_textbbox((0, 0), text, font=font, spacing=spacing)
             band = bottom - top + 2 * padding
             if band + fade + fade_out + footer <= height * 0.45 and right - left <= width - 2 * inset:
@@ -92,7 +93,10 @@ def prepare(manifest, limit, font):
                 image = (manifest.parent / relative).resolve(strict=True)
                 if relative.is_absolute() or not image.is_relative_to(manifest.parent):
                     raise ValueError("图片路径超出故事目录")
-                render_caption(image, folder / f"{index:03d}.jpg", page["caption"], font)
+                render_caption(
+                    image, folder / f"{index:03d}.jpg", page["caption"], font,
+                    index, len(pages),
+                )
             except (OSError, ValueError) as error:
                 raise ValueError(f"第 {index} 幅：{error}") from error
         return folder
