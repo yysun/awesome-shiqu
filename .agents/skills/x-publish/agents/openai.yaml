@@ -1,4 +1,4 @@
 interface:
-  display_name: "X 帖子串发布"
-  short_description: "将拾趣故事整理为配图帖子串，首帖引流到阅读站并保留来源"
-  default_prompt: "使用 $x-publish 发布指定拾趣故事为 X 帖子串，为每幅图片叠加旁白，并让首帖简洁引流到拾趣阅读站。"
+  display_name: "X 单图发布"
+  short_description: "默认用拾趣故事第一张原图，发布一条带故事直达链接的 X 帖子"
+  default_prompt: "使用 $x-publish 发布指定拾趣故事，配第一张原图和故事直达链接。"
