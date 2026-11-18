@@ -1,4 +1,4 @@
 interface:
   display_name: "X 单图发布"
-  short_description: "默认用拾趣故事第一张原图，发布一条带故事直达链接的 X 帖子"
+  short_description: "指定或随机发布拾趣故事到 X，默认配首幅原图和全文链接"
   default_prompt: "使用 $x-publish 发布指定拾趣故事，配第一张原图和故事直达链接。"
